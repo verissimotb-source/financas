@@ -397,6 +397,11 @@ button.subnova:hover{border-color:var(--orquidea);border-style:solid}
         <table class="tbl" id="listaSub"></table>
       </div>
       <div class="card">
+        <h3>Palavras aprendidas <button class="btn ghost sm" id="addRegra">+ Nova</button></h3>
+        <div class="sub" style="margin-top:-8px;margin-bottom:12px">Toda vez que você corrige um lançamento, a palavra fica guardada aqui e passa a valer mais que o dicionário de fábrica. Apague qualquer uma que tenha ficado errada.</div>
+        <div class="scroll"><table class="tbl" id="listaRegras"></table></div>
+      </div>
+      <div class="card">
         <h3>Quem <button class="btn ghost sm" id="addQuem">+ Nova</button></h3>
         <div class="sub" style="margin-top:-8px;margin-bottom:12px">Quem se beneficiou do gasto. Independente da categoria — "trabalho de escola da Laura" pode ser Escola <i>e</i> Laura ao mesmo tempo.</div>
         <table class="tbl" id="listaQuem"></table>
@@ -408,8 +413,8 @@ button.subnova:hover{border-color:var(--orquidea);border-style:solid}
     <div class="note"><span>◆</span><div>Cada cartão mostra a fatura <b>paga</b> no mês escolhido. As três datas são editáveis: mude o vencimento e o intervalo de compras sempre que o banco fugir do padrão.</div></div>
     <div id="faturas" class="grid g2"></div>
     <div class="card" style="margin-top:14px">
-      <h3>Regra de cada cartão</h3>
-      <div class="sub" style="margin-top:-8px;margin-bottom:12px">Isto só preenche as datas de cada fatura pela primeira vez. Quando o banco mudar num mês específico, corrija ali em cima — o que você escreve sempre vale mais que esta regra.</div>
+      <h3>Formas de pagamento <button class="btn ghost sm" id="addPag">+ Nova</button></h3>
+      <div class="sub" style="margin-top:-8px;margin-bottom:12px">Adicione seus cartões e contas. Marcar como <b>Cartão</b> faz a compra cair na fatura em vez de sair na hora — e os dias aqui só preenchem as datas de cada fatura pela primeira vez. Corrija mês a mês ali em cima quando o banco mudar.</div>
       <div id="confCart"></div>
     </div>
   </div>
@@ -1304,6 +1309,16 @@ function renderListas(){
   };
   document.getElementById('listaCat').innerHTML='<tbody>'+cats().map((x,i)=>linha(x,i,'cat','cat')).join('')+'</tbody>';
   document.getElementById('listaQuem').innerHTML='<tbody>'+pess().map((x,i)=>linha(x,i,'quem','quem')).join('')+'</tbody>';
+  const rs=Object.entries(S.regras).sort((a,b)=>a[0].localeCompare(b[0]));
+  document.getElementById('listaRegras').innerHTML= rs.length
+    ? `<thead><tr><th>Palavra</th><th>Vira</th><th></th></tr></thead><tbody>`
+      +rs.map(([w,r])=>`<tr>
+        <td class="desc">${esc(w)}</td>
+        <td><span class="chip"><i style="background:${catCor(r.cat)}"></i>${esc(r.cat)}</span>
+            <span class="mini"> · ${esc(r.quem)}</span></td>
+        <td style="text-align:right"><button class="btn ghost sm" data-delregra="${esc(w)}">×</button></td></tr>`).join('')
+      +`</tbody>`
+    : `<tbody><tr><td><div class="empty" style="padding:20px"><b>Nada ainda</b>Corrija a categoria de um lançamento e a palavra aparece aqui.</div></td></tr></tbody>`;
   const ls=subs();
   document.getElementById('listaSub').innerHTML= ls.length
     ? '<tbody>'+ls.map((x,i)=>{
@@ -1361,14 +1376,24 @@ function renderFat(R){
 
   const hj=new Date(), ex=`${hj.getFullYear()}-${String(hj.getMonth()+1).padStart(2,'0')}-20`;
   document.getElementById('confCart').innerHTML=
-    `<table class="tbl"><thead><tr><th>Cartão</th><th style="width:90px">Fecha dia</th>
-     <th style="width:90px">Vence dia</th><th>Confira</th></tr></thead><tbody>`
-    +S.cartoes.map((c,ic)=>{const cf=confCartao(c);return `<tr>
-      <td class="desc">${esc(c)}</td>
-      <td><input class="num inval" style="width:62px" data-cf="${ic}" value="${cf.fech}" inputmode="numeric"></td>
-      <td><input class="num inval" style="width:62px" data-cvd="${ic}" value="${cf.venc}" inputmode="numeric"></td>
-      <td><span class="mini">compra em 20/${String(hj.getMonth()+1).padStart(2,'0')} →
-        paga em <b style="color:var(--orquidea)">${mesLabel(mesFatura(ex,c))}</b></span></td></tr>`}).join('')
+    `<table class="tbl"><thead><tr><th>Forma</th><th style="width:112px">Tipo</th>
+     <th style="width:76px">Fecha</th><th style="width:76px">Vence</th><th class="hide-sm">Confira</th><th></th></tr></thead><tbody>`
+    +S.pagamentos.map((pg,ip)=>{
+      const cart=ehCartao(pg), cf=confCartao(pg);
+      const n=[...S.lancamentos,...S.fixos,...S.parcelas].filter(x=>x.pag===pg).length;
+      return `<tr>
+        <td class="desc">${esc(pg)}<br><span class="mini">${n?`${n} uso${n>1?'s':''}`:'sem uso'}</span></td>
+        <td><select class="selq" data-pgtipo="${ip}">
+          <option value="1"${cart?' selected':''}>Cartão</option>
+          <option value="0"${cart?'':' selected'}>À vista</option></select></td>
+        <td>${cart?`<input class="num inval" style="width:56px;text-align:center" data-cf="${ip}" value="${cf.fech}" inputmode="numeric">`:'<span class="mini">—</span>'}</td>
+        <td>${cart?`<input class="num inval" style="width:56px;text-align:center" data-cvd="${ip}" value="${cf.venc}" inputmode="numeric">`:'<span class="mini">—</span>'}</td>
+        <td class="hide-sm"><span class="mini">${cart
+          ? `compra em 20/${String(hj.getMonth()+1).padStart(2,'0')} → paga em <b style="color:var(--orquidea)">${mesLabel(mesFatura(ex,pg))}</b>`
+          : 'sai da conta no dia da compra'}</span></td>
+        <td style="text-align:right;white-space:nowrap">
+          <button class="btn ghost sm" data-pgedit="${ip}">Renomear</button>
+          <button class="btn ghost sm" data-pgdel="${ip}">×</button></td></tr>`}).join('')
     +`</tbody></table>`;
 }
 
@@ -1425,8 +1450,10 @@ function renderFix(ym){
 }
 
 function renderLanc(ym,R){
-  const sel=document.getElementById('qPag');
-  if(!sel.options.length)S.pagamentos.forEach(p=>sel.add(new Option(p,p)));
+  const sel=document.getElementById('qPag'), chave=S.pagamentos.join('|');
+  if(sel.dataset.lista!==chave){const v=sel.value;sel.innerHTML='';
+    S.pagamentos.forEach(p=>sel.add(new Option(p,p)));
+    if(S.pagamentos.includes(v))sel.value=v; sel.dataset.lista=chave}
   const qd=document.getElementById('qData'),hj=new Date().toISOString().slice(0,10);
   if(!qd.value||qd.value.slice(0,7)!==ym) qd.value=(hj.slice(0,7)===ym)?hj:'';
 
@@ -1561,8 +1588,9 @@ document.body.addEventListener('change',e=>{
   if(d.pdia){const x=acha(S.parcelas,d.pdia);if(x){x.dia=Math.max(1,Math.min(31,parseInt(t.value)||10));render()}}
   if(d.edia){const e=acha(S.entradas,d.edia);if(e){e.dia=Math.max(1,Math.min(31,parseInt(t.value)||5));render()}}
   if(d.sini){S.saldoIni=S.saldoIni||{};S.saldoIni[S.mes]=parseVal(t.value)*(t.value.trim().startsWith('-')?-1:1);render()}
+  if(d.pgtipo!==undefined){tipoPag(+d.pgtipo,t.value==='1');return}
   if(d.cf!==undefined||d.cvd!==undefined){
-    const cart=S.cartoes[+(d.cf??d.cvd)]; if(!cart) return;
+    const cart=S.pagamentos[+(d.cf??d.cvd)]; if(!cart) return;
     const a=confCartao(cart), n=Math.max(1,Math.min(31,parseInt(t.value)||1));
     S.confCartoes=S.confCartoes||{};
     S.confCartoes[cart]=(d.cf!==undefined)?{fech:n,venc:a.venc}:{fech:a.fech,venc:n};
@@ -1597,6 +1625,9 @@ document.body.addEventListener('click',e=>{
   if(d.vermodo){modoCaixa=(d.vermodo==='caixa');syncVista();return}
   if(d.fechafoco){catFoco=null;render();return}
   if(d.novasub){const [campo,id]=d.novasub.split('|');criarSubPara(campo,id);return}
+  if(d.pgedit!==undefined) renomearPag(+d.pgedit);
+  if(d.pgdel!==undefined) apagarPag(+d.pgdel);
+  if(d.delregra!==undefined){delete S.regras[d.delregra];render();toast('Regra removida.')}
   if(d.editsub!==undefined) editarSub(+d.editsub);
   if(d.delsub!==undefined) apagarSub(+d.delsub);
   if(d.editcat!==undefined) editarItem('cat',+d.editcat);
@@ -1614,8 +1645,10 @@ document.body.addEventListener('click',e=>{
 
 const dP=document.getElementById('dlgPaste'),dR=document.getElementById('dlgRev');
 document.getElementById('openPaste').onclick=()=>{
-  const sp=document.getElementById('pastePag');
-  if(!sp.options.length)S.pagamentos.forEach(p=>sp.add(new Option(p,p)));
+  const sp=document.getElementById('pastePag'), ch=S.pagamentos.join('|');
+  if(sp.dataset.lista!==ch){const v=sp.value;sp.innerHTML='';
+    S.pagamentos.forEach(p=>sp.add(new Option(p,p)));
+    if(S.pagamentos.includes(v))sp.value=v; sp.dataset.lista=ch}
   document.getElementById('pasteTxt').value='';dP.showModal();
 };
 document.getElementById('pasteCancel').onclick=()=>dP.close();
@@ -1633,7 +1666,7 @@ document.getElementById('pasteGo').onclick=()=>{
     const mes=data?data.slice(0,7):S.mes;
     const {cat,quem}=classificar(desc);
     return {id:uid(),desc,valor,data,mes,cat,quem,prev:futuro(mes),
-      pag:document.getElementById('pastePag').value||'Santander T'};
+      pag:document.getElementById('pastePag').value||S.pagamentos[0]};
   }).filter(x=>x.valor>0&&x.desc);
   if(!pendente.length){toast('Não consegui ler nenhuma linha. Confere o formato.');return}
   dP.close();
@@ -1808,6 +1841,80 @@ function apagarSub(i){
   [...S.lancamentos,...S.fixos,...S.parcelas].forEach(y=>{if(y.sub===x.nome&&y.cat===x.cat)y.sub=undefined});
   S.subcats.splice(i,1);render();toast(`${x.nome} apagada.`);
 }
+/* ---- formas de pagamento ---- */
+function usoPag(nome){return [...S.lancamentos,...S.fixos,...S.parcelas].filter(x=>x.pag===nome).length}
+function novaPag(){
+  abrirForm('Nova forma de pagamento','Um cartão de crédito, uma conta, um vale — o que você usar.',
+    [{k:'nome',lbl:'Nome',ph:'Itaú Click, Vale refeição...'},
+     {k:'cart',lbl:'É cartão de crédito (a compra cai na fatura)',tipo:'check'},
+     {k:'fech',lbl:'Se for cartão: fecha no dia',ph:'18'},
+     {k:'venc',lbl:'Se for cartão: vence no dia',ph:'25'}],
+    o=>{const n=(o.nome||'').trim();
+      if(!n){toast('Escreva um nome.');return}
+      if(S.pagamentos.some(x=>x.toLowerCase()===n.toLowerCase())){toast('Já existe uma com esse nome.');return}
+      S.pagamentos.push(n);
+      if(o.cart){S.cartoes.push(n);
+        S.confCartoes[n]={fech:Math.max(1,Math.min(31,+o.fech||18)),venc:Math.max(1,Math.min(31,+o.venc||25))}}
+      dF.close();render();toast(`${n} criada${o.cart?' como cartão':''}.`);});
+}
+function renomearPag(ip){
+  const antigo=S.pagamentos[ip]; if(!antigo) return;
+  abrirForm(`Renomear ${esc(antigo)}`,`${usoPag(antigo)} lançamentos usam esta forma. Renomear atualiza todos.`,
+    [{k:'nome',lbl:'Nome',ph:antigo}],
+    o=>{const n=(o.nome||'').trim()||antigo;
+      if(n!==antigo&&S.pagamentos.some(x=>x.toLowerCase()===n.toLowerCase())){toast('Já existe uma com esse nome.');return}
+      if(n!==antigo){
+        S.pagamentos[ip]=n;
+        const ic=S.cartoes.indexOf(antigo); if(ic>=0)S.cartoes[ic]=n;
+        if(S.confCartoes[antigo]){S.confCartoes[n]=S.confCartoes[antigo];delete S.confCartoes[antigo]}
+        if(S.ciclos[antigo]){S.ciclos[n]=S.ciclos[antigo];delete S.ciclos[antigo]}
+        [...S.lancamentos,...S.fixos,...S.parcelas].forEach(x=>{if(x.pag===antigo)x.pag=n});
+      }
+      dF.close();render();toast(`Renomeada para ${n} em tudo.`);});
+}
+function apagarPag(ip){
+  const nome=S.pagamentos[ip]; if(!nome) return;
+  if(S.pagamentos.length<=1){toast('Precisa sobrar pelo menos uma forma de pagamento.');return}
+  const n=usoPag(nome), destinos=S.pagamentos.filter(x=>x!==nome);
+  const remove=()=>{
+    S.pagamentos.splice(S.pagamentos.indexOf(nome),1);
+    const ic=S.cartoes.indexOf(nome); if(ic>=0)S.cartoes.splice(ic,1);
+    delete S.confCartoes[nome]; delete S.ciclos[nome];
+  };
+  if(!n){remove();render();toast(`${nome} apagada.`);return}
+  abrirForm(`Apagar ${esc(nome)}`,`${n} ${n===1?'lançamento usa':'lançamentos usam'} esta forma. Escolha para onde vão.`,
+    [{k:'destino',lbl:'Mover para',tipo:'select',opts:destinos}],
+    o=>{[...S.lancamentos,...S.fixos,...S.parcelas].forEach(x=>{if(x.pag===nome)x.pag=o.destino});
+      remove();dF.close();render();toast(`${n} movido${n>1?'s':''} para ${o.destino}.`);});
+}
+function tipoPag(ip,virarCartao){
+  const nome=S.pagamentos[ip]; if(!nome) return;
+  if(virarCartao){
+    if(!S.cartoes.includes(nome))S.cartoes.push(nome);
+    if(!S.confCartoes[nome])S.confCartoes[nome]={fech:18,venc:25};
+    toast(`${nome} agora é cartão — confira fechamento e vencimento.`);
+  }else{
+    const ic=S.cartoes.indexOf(nome); if(ic>=0)S.cartoes.splice(ic,1);
+    delete S.ciclos[nome];
+    toast(`${nome} agora sai da conta no dia da compra.`);
+  }
+  render();
+}
+document.getElementById('addPag').onclick=novaPag;
+
+/* ---- palavras aprendidas ---- */
+function novaRegra(){
+  abrirForm('Nova palavra','Sempre que a descrição contiver essa palavra, o app usa esta categoria.',
+    [{k:'palavra',lbl:'Palavra',ph:'padaria da esquina'},
+     {k:'cat',lbl:'Categoria',tipo:'select',opts:nomesCat()},
+     {k:'quem',lbl:'Quem',tipo:'select',opts:nomesQuem()}],
+    o=>{const w=norm((o.palavra||'').trim());
+      if(w.length<3){toast('Use uma palavra com 3 letras ou mais.');return}
+      S.regras[w]={cat:o.cat,quem:o.quem};
+      dF.close();render();toast(`"${w}" → ${o.cat} · ${o.quem}`);});
+}
+document.getElementById('addRegra').onclick=novaRegra;
+
 document.getElementById('addSub').onclick=novaSub;
 document.getElementById('addCat').onclick=()=>novoItem('cat');
 document.getElementById('addQuem').onclick=()=>novoItem('quem');
