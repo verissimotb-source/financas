@@ -261,6 +261,55 @@ select.sub{margin-top:4px;display:block;font-size:11px;color:var(--ink2);backgro
 button.subnova{margin-top:4px;display:block;border:1px dashed var(--line);background:#FFF6FA;
   color:var(--orquidea);border-radius:9px;padding:4px 9px;font:inherit;font-size:10.5px;cursor:pointer;white-space:nowrap}
 button.subnova:hover{border-color:var(--orquidea);border-style:solid}
+/* filtros ativos */
+.chipf{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#FFF6FA;
+  border-radius:20px;padding:5px 11px;font:inherit;font-size:12px;font-weight:500;color:var(--ink);cursor:pointer}
+.chipf i{width:8px;height:8px;border-radius:3px;flex:none}
+.chipf b{color:var(--rosa);font-size:14px;line-height:1}
+.chipf:hover{border-color:var(--rosa)}
+tr.clicavel{cursor:pointer}
+tr.clicavel:hover td{background:#FFF0F6}
+/* ================= celular ================= */
+@media (max-width:760px){
+  .wrap{padding:12px 10px}
+  .card{padding:16px 14px;border-radius:15px}
+  .regua{padding:18px 15px 16px}
+  .card h3{font-size:14.5px;flex-wrap:wrap}
+  .big{font-size:23px}
+  .barrow{grid-template-columns:1fr;gap:4px;padding:9px 6px}
+  .barrow .barval{text-align:left}
+  .barlbl span{white-space:normal}
+  .grid.g3,.grid.g2,.grid.g21{grid-template-columns:1fr}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tabs button{padding:11px 13px}
+  .foco-topo{flex-direction:column;align-items:flex-start}
+
+  /* tabelas densas viram cartões empilhados */
+  .tbl.mob thead{display:none}
+  .tbl.mob tbody tr{display:grid;grid-template-columns:26px 1fr auto;gap:6px 9px;
+    padding:12px 4px;border-bottom:1px solid var(--line2);align-items:center}
+  .tbl.mob tbody tr:hover td{background:transparent}
+  .tbl.mob td{border:0;padding:0;max-width:none}
+  .tbl.mob td.desc{white-space:normal;overflow:visible}
+  .tbl.mob .selc,.tbl.mob .selq,.tbl.mob select.sub{max-width:none;width:100%}
+  .tbl.mob .inval{width:100%;font-size:16px}
+
+  /* lançamentos: feito | descrição | valor / data / categoria+sub / quem / apagar */
+  .tbl.lanc tbody tr>td:nth-child(1){grid-column:1;grid-row:1}
+  .tbl.lanc tbody tr>td:nth-child(3){grid-column:2;grid-row:1;font-size:14.5px}
+  .tbl.lanc tbody tr>td:nth-child(7){grid-column:3;grid-row:1;text-align:right;font-size:15px}
+  .tbl.lanc tbody tr>td:nth-child(2){grid-column:2/4;grid-row:2}
+  .tbl.lanc tbody tr>td:nth-child(4){grid-column:2/4;grid-row:3}
+  .tbl.lanc tbody tr>td:nth-child(5){grid-column:2/4;grid-row:4}
+  .tbl.lanc tbody tr>td:nth-child(8){grid-column:1;grid-row:4;justify-self:start}
+  .tbl.lanc tbody tr>td[colspan]{grid-column:1/4}
+
+  /* painel de detalhe: descrição | valor / subcategoria */
+  .tbl.mob:not(.lanc) tbody tr{grid-template-columns:1fr auto}
+  .tbl.mob:not(.lanc) tbody tr>td:nth-child(1){grid-column:1;grid-row:1}
+  .tbl.mob:not(.lanc) tbody tr>td:nth-child(5){grid-column:2;grid-row:1;text-align:right}
+  .tbl.mob:not(.lanc) tbody tr>td:nth-child(2){grid-column:1/3;grid-row:2}
+}
 </style>
 
 <div class="wrap">
@@ -519,7 +568,8 @@ const resolveCat=n=>porBase(cats(),n)||'Outros';
 const resolveQuem=n=>porBase(pess(),n)||nomesQuem()[0]||'Thais';
 const subs=()=>(S&&S.subcats)||[];
 const subsDe=cat=>subs().filter(x=>x.cat===cat).map(x=>x.nome);
-let catFoco=null;
+let foco={cat:null,sub:null,quem:null};
+const temFoco=()=>!!(foco.cat||foco.sub||foco.quem);
 const proximaCor=lista=>PALETA.find(c=>!lista.some(x=>x.cor===c))||PALETA[lista.length%PALETA.length];
 
 const catCor=n=>{const c=cats().find(x=>x.nome===n);return c?c.cor:'#C9B3C0'};
@@ -672,6 +722,10 @@ const VAZIO={
   categorias:CAT_PADRAO.map(([nome,cor])=>({nome,cor,base:nome})),
   pessoas:QUEM_PADRAO_LISTA.map(([nome,cor])=>({nome,cor,base:nome}))
 };
+/* Dados do backup de 22/08. Só entram se o navegador estiver vazio;
+   se já houver lançamentos salvos, eles têm prioridade e nada é sobrescrito. */
+const SEMENTE={"v":5,"mes":"2026-09","inicio":"2026-09","pagamentos":["Débito","Nubank T","Santander T","Amazon","Pix","Dinheiro","Tarcilia"],"cartoes":["Nubank T","Santander T","Amazon","Tarcilia"],"confCartoes":{"Nubank T":{"fech":18,"venc":25},"Santander T":{"fech":19,"venc":25},"Amazon":{"fech":14,"venc":25},"Tarcilia":{"fech":5,"venc":10}},"ciclos":{"Santander T":{"2026-09":{"venc":"2026-09-25","de":"2026-08-18","ate":"2026-09-20"}},"Amazon":{"2026-09":{"venc":"2026-09-25","de":"2026-08-14","ate":"2026-09-15"}},"Nubank T":{"2026-09":{"venc":"2026-09-25","de":"2026-08-18","ate":"2026-09-18"}}},"regras":{"impressao":{"cat":"Educação","quem":"Mensal Familiar"},"brunch":{"cat":"Lazer","quem":"Mensal Familiar"},"google":{"cat":"Assinaturas","quem":"Thais"},"resistencia":{"cat":"Moradia","quem":"Mensal Familiar"},"cinema":{"cat":"Lazer","quem":"Mensal Familiar"},"compra":{"cat":"Mercado","quem":"Mensal Familiar"},"lanche":{"cat":"Alimentação","quem":"Mensal Familiar"},"licao":{"cat":"Educação","quem":"Mensal Familiar"},"mercado":{"cat":"Alimentação","quem":"Mensal Familiar"},"travalho":{"cat":"Educação","quem":"Mensal Familiar"},"comi":{"cat":"Alimentação","quem":"Thais"},"presente":{"cat":"Presentes","quem":"Mensal Familiar"},"gasolina":{"cat":"Transporte","quem":"Mensal Familiar"},"uber":{"cat":"Transporte","quem":"Thais"},"apple":{"cat":"Assinaturas","quem":"Thais"},"lavagem":{"cat":"Transporte","quem":"Mensal Familiar"},"pastelaria":{"cat":"Alimentação","quem":"Mensal Familiar"},"seringa":{"cat":"Saúde","quem":"Mensal Familiar"}},"entradas":[{"id":"uihn93sy","nome":"Salario ","valor":6000,"mes":"2026-09","fixa":true,"dia":25},{"id":"q4yuwltl","nome":"Presente Pai","valor":244.76,"mes":"2026-09","fixa":false,"dia":25},{"id":"ozzkvpmt","nome":"Marcos Mercado","valor":547.1,"mes":"2026-09","fixa":false,"dia":25},{"id":"186brp01","nome":"Presente Mae","valor":122,"mes":"2026-09","fixa":false,"dia":25},{"id":"e8laxi6e","nome":"Marcos Amazon","valor":31.65,"mes":"2026-09","fixa":false,"dia":25},{"id":"ck2qu7s3","nome":"Marcos Nubank","valor":1502.76,"mes":"2026-09","fixa":false,"dia":25},{"id":"eiapl1cc","nome":"Marcos Santander","valor":736.32,"mes":"2026-09","fixa":false,"dia":25},{"id":"vfz2tr2k","nome":"Presente Mae","valor":122,"mes":"2026-10","fixa":false,"dia":25},{"id":"uicw718h","nome":"Presente Pai","valor":122.38,"mes":"2026-10","fixa":false,"dia":25},{"id":"nrzig1i0","nome":"Presente Mae","valor":122,"mes":"2026-11","fixa":false,"dia":25},{"id":"us13ore6","nome":"Presente Mae","valor":122,"mes":"2026-12","fixa":false,"dia":25},{"id":"rh9k67pz","nome":"Marcos Nubank","valor":1489.64,"mes":"2026-10","fixa":false,"dia":25},{"id":"eloyz8wh","nome":"Presente Pai","valor":87.73,"mes":"2026-11","fixa":false,"dia":25},{"id":"9xup86g3","nome":"Marcos Nubank","valor":1489.64,"mes":"2026-11","fixa":false,"dia":25},{"id":"1innf9ks","nome":"Presente Pai","valor":87.73,"mes":"2026-12","fixa":false,"dia":25},{"id":"1fe8y3rr","nome":"Marcos Nubank","valor":934.88,"mes":"2026-12","fixa":false,"dia":25},{"id":"a71l77bw","nome":"Marcos Santander","valor":482.08,"mes":"2026-10","fixa":false,"dia":25},{"id":"cnyo1lfm","nome":"Marcos Amazon","valor":31.65,"mes":"2026-10","fixa":false,"dia":25},{"id":"3h38ry9q","nome":"Marcos Santander","valor":482.08,"mes":"2026-11","fixa":false,"dia":25},{"id":"dm5t5n3o","nome":"Marcos Amazon","valor":31.65,"mes":"2026-11","fixa":false,"dia":25},{"id":"ogqfx751","nome":"Marcos Santander","valor":369.88,"mes":"2026-12","fixa":false,"dia":25},{"id":"xj6nqini","nome":"Marcos Amazon","valor":31.65,"mes":"2026-12","fixa":false,"dia":25},{"id":"ap2d752e","nome":"Freela","valor":2000,"mes":"2026-09","fixa":false,"dia":10},{"id":"87ngm8fx","nome":"Freela","valor":2000,"mes":"2026-10","fixa":false,"dia":10},{"id":"cp6kbfqf","nome":"Freela","valor":2000,"mes":"2026-11","fixa":false,"dia":10},{"id":"56i4f3bm","nome":"Freela","valor":2000,"mes":"2026-12","fixa":false,"dia":10}],"fixos":[{"id":"uxgbl597","nome":"Casa","valor":2950,"pag":"Débito","cat":"Moradia","quem":"Casa","desde":"2026-09","dia":25,"pagos":{}},{"id":"mptl3iqn","nome":"FIES ","valor":162.35,"pag":"Débito","cat":"Dívidas","quem":"Casa","desde":"2026-09","dia":4,"pagos":{}},{"id":"muzk9j6n","nome":"Internet","valor":153.4,"pag":"Débito","cat":"Moradia","quem":"Casa","desde":"2026-09","dia":10,"pagos":{}},{"id":"xtxrqht0","nome":"Guarda da Rua","valor":36,"pag":"Débito","cat":"Moradia","quem":"Casa","desde":"2026-09","dia":10,"pagos":{}},{"id":"59yuv8gi","nome":"Luz","valor":358.25,"pag":"Débito","cat":"Moradia","quem":"Casa","desde":"2026-09","dia":17,"pagos":{}},{"id":"bb0b4ks9","nome":"Água ","valor":98.51,"pag":"Débito","cat":"Moradia","quem":"Casa","desde":"2026-09","dia":25,"pagos":{}},{"id":"wyrk90vh","nome":"Seguro do carro ","valor":213.14,"pag":"Nubank T","cat":"Transporte","quem":"Casa","desde":"2026-09","dia":1,"pagos":{}},{"id":"m996yto6","nome":"“Mercado”","valor":1200,"pag":"Débito","cat":"Alimentação","quem":"Mensal Familiar","desde":"2026-10","dia":25,"pagos":{}}],"parcelas":[{"id":"vpqx3fm7","nome":"Conserto do carro ","valor":115.93,"pag":"Tarcilia","cat":"Transporte","quem":"Família","atual":4,"total":6,"mesRef":"2026-09","dia":10},{"id":"yjm39z0k","nome":"Vacina da Dengue da Laura","valor":68.8,"pag":"Amazon","cat":"Saúde","quem":"Laura","atual":5,"total":5,"mesRef":"2026-09","dia":10},{"id":"x4jq38ot","nome":"Repetidor de z sinal do wifi","valor":63.3,"pag":"Amazon","cat":"Moradia","quem":"Thais","atual":1,"total":3,"mesRef":"2026-09","dia":10},{"id":"kwbf5xzg","nome":"Presente do marcos","valor":50.16,"pag":"Nubank T","cat":"Presentes","quem":"Thais","atual":6,"total":8,"mesRef":"2026-09","dia":10},{"id":"967dxs8i","nome":"Material a escolar da Laura","valor":26.23,"pag":"Nubank T","cat":"Educação","quem":"Laura","atual":8,"total":11,"mesRef":"2026-09","dia":10},{"id":"z9fpxusu","nome":"Jaqueta","valor":26.27,"pag":"Nubank T","cat":"Vestuário","quem":"Thais","atual":3,"total":5,"mesRef":"2026-09","dia":10},{"id":"gpmmt4up","nome":"IFood","valor":36.38,"pag":"Nubank T","cat":"Alimentação","quem":"Thais","atual":4,"total":5,"mesRef":"2026-09","dia":10,"sub":"iFood"},{"id":"9fsrp9c0","nome":"não lembro","valor":161.25,"pag":"Nubank T","cat":"Transporte","quem":"Thais","atual":3,"total":4,"mesRef":"2026-09","dia":10},{"id":"uiwdlprg","nome":"Airbbb Visgem","valor":138,"pag":"Santander T","cat":"Lazer","quem":"Família","atual":5,"total":6,"mesRef":"2026-09","dia":10},{"id":"u5tyitvy","nome":"ingresso Aquário","valor":54,"pag":"Santander T","cat":"Lazer","quem":"Família","atual":3,"total":5,"mesRef":"2026-09","dia":10},{"id":"alpkc7r8","nome":"sei ks","valor":44.09,"pag":"Amazon","cat":"Outros","quem":"Thais","atual":3,"total":3,"mesRef":"2026-09","dia":10},{"id":"8se63xe9","nome":"calça","valor":191.92,"pag":"Santander T","cat":"Vestuário","quem":"Thais","atual":4,"total":5,"mesRef":"2026-09","dia":10},{"id":"cmtdn4dj","nome":"ifood","valor":20.71,"pag":"Santander T","cat":"Alimentação","quem":"Thais","atual":3,"total":5,"mesRef":"2026-09","dia":10,"sub":"iFood"},{"id":"cfquv52i","nome":"Presente mae","valor":183.24,"pag":"Santander T","cat":"Presentes","quem":"Thais","atual":6,"total":9,"mesRef":"2026-09","dia":10},{"id":"2bzl6elk","nome":"Presente do Marcos","valor":55.54,"pag":"Santander T","cat":"Presentes","quem":"Thais","atual":6,"total":9,"mesRef":"2026-09","dia":10},{"id":"2hp974v1","nome":"Material Escolar Laura","valor":183.43,"pag":"Santander T","cat":"Educação","quem":"Laura","atual":8,"total":10,"mesRef":"2026-09","dia":10},{"id":"c35veffe","nome":"Pneu di carro","valor":163.8,"pag":"Santander T","cat":"Transporte","quem":"Família","atual":10,"total":10,"mesRef":"2026-09","dia":10},{"id":"ug7bb5w0","nome":"Remédio Trezette","valor":73.41,"pag":"Santander T","cat":"Saúde","quem":"Thais","atual":2,"total":2,"mesRef":"2026-09","dia":10},{"id":"1km4znqm","nome":"Remédio Venvanse","valor":145.32,"pag":"Santander T","cat":"Saúde","quem":"Thais","atual":2,"total":3,"mesRef":"2026-09","dia":10},{"id":"82b2amm8","nome":"Emprestei pro Marcos ","valor":369.88,"pag":"Santander T","cat":"Gasto de outras pessoas","quem":"Marcos","atual":1,"total":4,"mesRef":"2026-09","dia":10},{"id":"nqjr3tgm","nome":"Emprestimo Marcos","valor":112.2,"pag":"Santander T","cat":"Gasto de outras pessoas","quem":"Marcos","atual":3,"total":5,"mesRef":"2026-09","dia":10},{"id":"fkqjg9m2","nome":"MOp","valor":49.99,"pag":"Santander T","cat":"Compras","quem":"Mensal Familiar","atual":3,"total":4,"mesRef":"2026-09","dia":10},{"id":"zvblq1ek","nome":"iFood pra mim","valor":61.55,"pag":"Nubank T","cat":"Alimentação","quem":"Thais","atual":1,"total":4,"mesRef":"2026-09","dia":10,"sub":"iFood"},{"id":"y72hspp6","nome":"Emprestimo pro Marcos","valor":554.76,"pag":"Nubank T","cat":"Gasto de outras pessoas","quem":"Marcos","atual":5,"total":7,"mesRef":"2026-09","dia":10},{"id":"5rjz6rb3","nome":"Presente do meu Pai","valor":65.47,"pag":"Nubank T","cat":"Presentes","quem":"Thais","atual":2,"total":5,"mesRef":"2026-09","dia":10},{"id":"qjhoq30f","nome":"Gasto do Marcos","valor":54.88,"pag":"Nubank T","cat":"Gasto de outras pessoas","quem":"Marcos","atual":2,"total":5,"mesRef":"2026-09","dia":10},{"id":"kzx4zeg6","nome":"Presente Pai","valor":109.99,"pag":"Nubank T","cat":"Presentes","quem":"Thais","atual":2,"total":5,"mesRef":"2026-09","dia":10},{"id":"i8n5aa8b","nome":"iFood meu","valor":51.66,"pag":"Nubank T","cat":"Alimentação","quem":"Thais","atual":2,"total":3,"mesRef":"2026-09","dia":10,"sub":"iFood"},{"id":"bge2uhtp","nome":"Emprestimo Marcos","valor":600,"pag":"Nubank T","cat":"Gasto de outras pessoas","quem":"Marcos","atual":2,"total":5,"mesRef":"2026-09","dia":10},{"id":"xqynopk3","nome":"Presente Pai","valor":69.3,"pag":"Nubank T","cat":"Presentes","quem":"Thais","atual":2,"total":3,"mesRef":"2026-09","dia":10},{"id":"506vahgh","nome":"Maecos Dentista Isa","valor":280,"pag":"Nubank T","cat":"Gasto de outras pessoas","quem":"Marcos","atual":2,"total":5,"mesRef":"2026-09","dia":10}],"lancamentos":[{"id":"gp9ccz1c","desc":"Mercado Comida do Dia","valor":55.26,"data":"2026-08-18","mes":"2026-08","cat":"Alimentação","quem":"Mensal Familiar","prev":false,"pag":"Santander T","sub":"Semana"},{"id":"t83vzx28","desc":"Travalho Escolarda Laura","valor":76.09,"data":"2026-08-19","mes":"2026-08","cat":"Educação","quem":"Mensal Familiar","prev":false,"pag":"Santander T"},{"id":"94u04hi0","desc":"Impressão Lição Laura","valor":3,"data":"2026-08-20","mes":"2026-08","cat":"Educação","quem":"Mensal Familiar","prev":false,"pag":"Santander T"},{"id":"i99y57s5","desc":"Mercado Comida do Dia","valor":23.56,"data":"2026-08-20","mes":"2026-08","cat":"Alimentação","quem":"Mensal Familiar","prev":false,"pag":"Santander T","sub":"Semana"},{"id":"x7rrcaop","desc":"Café pra Mim","valor":23.9,"data":"2026-08-20","mes":"2026-08","cat":"Alimentação","quem":"Thais","prev":false,"pag":"Santander T","sub":"Porcaria"},{"id":"kn5hi51o","desc":"Comi no Shopping","valor":53.9,"data":"2026-08-20","mes":"2026-08","cat":"Alimentação","quem":"Thais","prev":false,"pag":"Santander T","sub":"Porcaria"},{"id":"h4xywev7","desc":"Presente aniversário","valor":95.7,"data":"2026-08-20","mes":"2026-08","cat":"Presentes","quem":"Mensal Familiar","prev":false,"pag":"Santander T"},{"id":"0339yv5n","desc":"Google One","valor":24.99,"data":"2026-08-14","mes":"2026-08","cat":"Assinaturas","quem":"Thais","prev":false,"pag":"Amazon"},{"id":"x1joi51t","desc":"Compra Mensal Mercado","valor":490.58,"data":"2026-08-15","mes":"2026-08","cat":"Mercado","quem":"Mensal Familiar","prev":false,"pag":"Amazon","sub":"Mensal"},{"id":"qtgzxsym","desc":"Brunch em Familia","valor":209,"data":"2026-08-15","mes":"2026-08","cat":"Lazer","quem":"Mensal Familiar","prev":false,"pag":"Amazon","sub":"Familia"},{"id":"afjvjocp","desc":"Cinema com Marcos","valor":101,"data":"2026-08-15","mes":"2026-08","cat":"Lazer","quem":"Mensal Familiar","prev":false,"pag":"Amazon","sub":"Casal"},{"id":"gcnszye9","desc":"Lanche da Laurw","valor":9,"data":"2026-08-18","mes":"2026-08","cat":"Alimentação","quem":"Mensal Familiar","prev":false,"pag":"Amazon","sub":"Laura"},{"id":"d65ylnah","desc":"Resistencia do Chuveiro","valor":95.64,"data":"2026-08-15","mes":"2026-08","cat":"Moradia","quem":"Mensal Familiar","prev":false,"pag":"Amazon","sub":"Imprevistos"},{"id":"v1uqeui8","desc":"Lição de casa","valor":50.18,"data":"2026-08-18","mes":"2026-08","cat":"Educação","quem":"Mensal Familiar","prev":false,"pag":"Amazon"},{"id":"zvmeflbh","desc":"Lanche da Laura","valor":6.9,"data":"2026-08-18","mes":"2026-08","cat":"Alimentação","quem":"Mensal Familiar","prev":false,"pag":"Amazon","sub":"Laura"},{"id":"5hn9v1rg","desc":"Gasolina","valor":335.68,"data":"2026-08-19","mes":"2026-08","cat":"Transporte","quem":"Mensal Familiar","prev":false,"pag":"Nubank T","sub":"Gasolina"},{"id":"b0h0jy6k","desc":"Lavagem do Carro - Mensal Familiar","valor":65,"data":"2026-08-18","mes":"2026-08","cat":"Transporte","quem":"Mensal Familiar","prev":false,"pag":"Nubank T"},{"id":"o8spm95w","desc":"Lenco - Mercado - Mensal Familiar","valor":29.89,"data":"2026-08-18","mes":"2026-08","cat":"Alimentação","quem":"Mensal Familiar","prev":false,"pag":"Nubank T"},{"id":"8uafvqin","desc":"Apple","valor":19.9,"data":"2026-08-20","mes":"2026-08","cat":"Assinaturas","quem":"Thais","prev":false,"pag":"Nubank T"},{"id":"m2mo76vb","desc":"Almoco no trabalho","valor":19.36,"data":"2026-08-19","mes":"2026-08","cat":"Alimentação","quem":"Thais","prev":false,"pag":"Nubank T","sub":"Trabalho"},{"id":"lfb2lt8h","desc":"Almoco no trabalho","valor":68.4,"data":"2026-08-19","mes":"2026-08","cat":"Alimentação","quem":"Thais","prev":false,"pag":"Nubank T","sub":"Trabalho"},{"id":"oy5kw9rz","desc":"Almoco no trabalho","valor":8,"data":"2026-08-19","mes":"2026-08","cat":"Alimentação","quem":"Thais","prev":false,"pag":"Nubank T","sub":"Trabalho"},{"id":"a3k6bv2d","desc":"Uber","valor":29.58,"data":"2026-08-20","mes":"2026-08","cat":"Transporte","quem":"Thais","prev":false,"pag":"Nubank T","sub":"Uber"},{"id":"ee8kl66t","desc":"Uber","valor":0.68,"data":"2026-08-20","mes":"2026-08","cat":"Transporte","quem":"Thais","prev":false,"pag":"Nubank T","sub":"Uber"},{"id":"wh3n8ezi","desc":"Uber","valor":26.01,"data":"2026-08-20","mes":"2026-08","cat":"Transporte","quem":"Thais","prev":false,"pag":"Nubank T","sub":"Uber"},{"id":"4eink72e","desc":"Mercado Lanche Laura","valor":18.13,"data":"2026-08-21","mes":"2026-08","cat":"Alimentação","quem":"Mensal Familiar","prev":false,"pag":"Santander T","sub":"Laura"},{"id":"rgovkln5","desc":"Seringa Farmacia","valor":39.49,"data":"2026-08-21","mes":"2026-08","cat":"Saúde","quem":"Mensal Familiar","prev":false,"pag":"Santander T"},{"id":"wvr5351j","desc":"Pastelaria","valor":43,"data":"2026-08-21","mes":"2026-08","cat":"Alimentação","quem":"Mensal Familiar","prev":false,"pag":"Santander T","sub":"Porcaria"}],"saldoIni":{"2026-08":3686.73},"subcats":[{"nome":"iFood","cat":"Alimentação"},{"nome":"Laura","cat":"Alimentação"},{"nome":"Semana","cat":"Alimentação"},{"nome":"Trabalho","cat":"Alimentação"},{"nome":"Porcaria","cat":"Alimentação"},{"nome":"Casal","cat":"Lazer"},{"nome":"Familia","cat":"Lazer"},{"nome":"Imprevistos","cat":"Moradia"},{"nome":"Mensal","cat":"Mercado"},{"nome":"Uber","cat":"Transporte"},{"nome":"Gasolina","cat":"Transporte"}],"categorias":[{"nome":"Alimentação","cor":"#FF7E6B","base":"Alimentação"},{"nome":"Transporte","cor":"#8FA8F0","base":"Transporte"},{"nome":"Moradia","cor":"#5FC9A8","base":"Moradia"},{"nome":"Saúde","cor":"#E4457C","base":"Saúde"},{"nome":"Beleza","cor":"#C46FD8","base":"Beleza"},{"nome":"Vestuário","cor":"#FFB05C","base":"Vestuário"},{"nome":"Lazer","cor":"#7B6BE0","base":"Lazer"},{"nome":"Assinaturas","cor":"#4FC3D9","base":"Assinaturas"},{"nome":"Educação","cor":"#B5905F","base":"Educação"},{"nome":"Presentes","cor":"#FFA8D8","base":"Presentes"},{"nome":"Dívidas","cor":"#6B5E7A","base":"Dívidas"},{"nome":"Compras","cor":"#F291B8","base":"Compras"},{"nome":"Outros","cor":"#C9B3C0","base":"Outros"},{"nome":"Mercado","cor":"#6B5E7A"},{"nome":"Gasto de outras pessoas","cor":"#6B5E7A"}],"pessoas":[{"nome":"Thais","cor":"#E4457C","base":"Thais"},{"nome":"Marcos","cor":"#8FA8F0","base":"Marcos"},{"nome":"Laura","cor":"#FFB05C","base":"Laura"},{"nome":"Casal","cor":"#C46FD8","base":"Casal"},{"nome":"Casa","cor":"#5FC9A8","base":"Casa"},{"nome":"Família","cor":"#B5905F","base":"Família"},{"nome":"Mensal Familiar","cor":"#4FC3D9"}]};
+
 let S=null, vista='decisao', aba='geral', salvando=null;
 
 const brl=n=>(n<0?'−':'')+'R$ '+Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -730,32 +784,43 @@ function salvar(){
       : Store.rotulo;
   },350);
 }
+function migrar(){
+  if(!S.inicio)S.inicio='2026-09';
+  if(S.saldoIni)Object.keys(S.saldoIni).forEach(m=>{if(Math.abs(S.saldoIni[m])<0.005)delete S.saldoIni[m]});
+  if(!S.regras)S.regras={};
+  if(!S.confCartoes)S.confCartoes={};
+  if(!S.ciclos)S.ciclos={};
+  if(!S.saldoIni)S.saldoIni={};
+  if(!S.subcats)S.subcats=[];
+  if(!S.pagamentos||!S.pagamentos.length)S.pagamentos=VAZIO.pagamentos.slice();
+  if(!S.cartoes)S.cartoes=[];
+  ['entradas','fixos','parcelas','lancamentos'].forEach(k=>{if(!Array.isArray(S[k]))S[k]=[]});
+  S.fixos.forEach(f=>{if(!f.dia)f.dia=10; if(!f.desde)f.desde=S.inicio});
+  S.parcelas.forEach(x=>{if(!x.dia)x.dia=10; if(!x.mesRef)x.mesRef=S.inicio});
+  S.entradas.forEach(e=>{if(!e.dia)e.dia=5; if(!e.mes)e.mes=S.inicio});
+  if(!S.categorias)S.categorias=CAT_PADRAO.map(([nome,cor])=>({nome,cor,base:nome}));
+  if(!S.pessoas)S.pessoas=QUEM_PADRAO_LISTA.map(([nome,cor])=>({nome,cor,base:nome}));
+  /* nomes usados nos lançamentos que não estão nas listas viram itens de verdade */
+  const vc=new Set(),vq=new Set(),vp=new Set();
+  [...S.lancamentos,...S.fixos,...S.parcelas].forEach(x=>{
+    if(x.cat)vc.add(x.cat); if(x.quem)vq.add(x.quem); if(x.pag)vp.add(x.pag)});
+  vc.forEach(n=>{if(!S.categorias.some(c=>c.nome===n))S.categorias.push({nome:n,cor:proximaCor(S.categorias)})});
+  vq.forEach(n=>{if(!S.pessoas.some(c=>c.nome===n))S.pessoas.push({nome:n,cor:proximaCor(S.pessoas)})});
+  vp.forEach(n=>{if(!S.pagamentos.includes(n))S.pagamentos.push(n)});
+  S.cartoes=S.cartoes.filter(c=>S.pagamentos.includes(c));
+  S.cartoes.forEach(c=>{const x=S.confCartoes[c]||{};
+    S.confCartoes[c]={fech:x.fech||18, venc:x.venc||(x.seguinte?5:25)}});
+  S.v=5;
+}
 async function carregar(){
   await Store.init();
   const txt=await Store.ler();
-  if(txt){ try{
-    S=JSON.parse(txt);
-    if(!S.inicio)S.inicio='2026-09';
-    if(!S.regras)S.regras={};
-    if(!S.confCartoes)S.confCartoes={};
-    if(!S.ciclos)S.ciclos={};
-    if(!S.saldoIni)S.saldoIni={};
-    if(!S.subcats)S.subcats=[];
-    S.fixos.forEach(f=>{if(!f.dia)f.dia=10});
-    S.parcelas.forEach(x=>{if(!x.dia)x.dia=10});
-    S.entradas.forEach(e=>{if(!e.dia)e.dia=5});
-    if(!S.categorias)S.categorias=CAT_PADRAO.map(([nome,cor])=>({nome,cor,base:nome}));
-    if(!S.pessoas)S.pessoas=QUEM_PADRAO_LISTA.map(([nome,cor])=>({nome,cor,base:nome}));
-    /* se algum lançamento antigo usa nome que não está na lista, cria a categoria */
-    const vistos=new Set(),vistosQ=new Set();
-    [...S.lancamentos,...S.fixos,...S.parcelas].forEach(x=>{if(x.cat)vistos.add(x.cat);if(x.quem)vistosQ.add(x.quem)});
-    vistos.forEach(n=>{if(!S.categorias.some(c=>c.nome===n))S.categorias.push({nome:n,cor:proximaCor(S.categorias)})});
-    vistosQ.forEach(n=>{if(!S.pessoas.some(c=>c.nome===n))S.pessoas.push({nome:n,cor:proximaCor(S.pessoas)})});
-    S.cartoes.forEach(c=>{const x=S.confCartoes[c]||{};
-      S.confCartoes[c]={fech:x.fech||18, venc:x.venc|| (x.seguinte?5:25)}});
-    return;
-  }catch(e){} }
-  S=JSON.parse(JSON.stringify(VAZIO));salvar();
+  if(txt){ try{ const g=JSON.parse(txt);
+    if(g&&Array.isArray(g.lancamentos)&&g.lancamentos.length+g.fixos.length+g.entradas.length>0){
+      S=g; migrar(); return; } }catch(e){} }
+  /* navegador vazio: entra com os dados do seu backup */
+  S=JSON.parse(JSON.stringify(typeof SEMENTE!=='undefined'&&SEMENTE?SEMENTE:VAZIO));
+  migrar(); salvar();
 }
 
 /* ============================================================
@@ -978,7 +1043,7 @@ function rosca(pares,total,cor,rotulo){
     const len=Math.max(0,C*(v/total)-2.5);
     const el=`<circle class="arc" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${cor(k)}" stroke-width="27"
       stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}" transform="rotate(-90 ${cx} ${cy})"
-      ${cor===catCor?`data-foco="${esc(k)}" style="cursor:pointer"`:''}><title>${esc(k)}: ${brl(v)}</title></circle>`;
+      ${cor===catCor?`data-foco="cat|${esc(k)}" style="cursor:pointer"`:''}><title>${esc(k)}: ${brl(v)}</title></circle>`;
     off+=C*(v/total); return el;
   }).join('');
   const legs=pares.slice(0,8).map(([k,v])=>
@@ -1000,8 +1065,9 @@ function barras(pares,cor,total,anterior){
       else{const p=(v-ant)/ant*100;
         if(Math.abs(p)>=5) d=`<span class="delta ${p>0?'up':'down'}">${p>0?'▲':'▼'}${Math.abs(p).toFixed(0)}%</span>`;}
     }
-    const clic=(cor===catCor);
-    return `<div class="barrow${clic?' clicavel':''}${clic&&k===catFoco?' focada':''}"${clic?` data-foco="${esc(k)}"`:''}>
+    const tipo=(cor===catCor)?'cat':(cor===quemCor)?'quem':null;
+    const ativa=tipo&&foco[tipo]===k;
+    return `<div class="barrow${tipo?' clicavel':''}${ativa?' focada':''}"${tipo?` data-foco="${tipo}|${esc(k)}"`:''}>
       <div class="barlbl"><i style="background:${cor(k)}"></i><span>${esc(k)}</span></div>
       <div class="bartrack"><div class="barfill" style="width:${v/max*100}%;background:${cor(k)}"></div></div>
       <div class="barval">${brl(v)} <span class="barpct">${total?(v/total*100).toFixed(0):0}%</span>${d}</div>
@@ -1044,7 +1110,7 @@ function janela(){
 }
 function renderFluxo(ym){
   const ev=fluxoDoMes(ym), dias=diasNoMes(ym), ini=saldoInicial(ym);
-  document.getElementById('saldoIni').value=brlc(ini)*1?brlc(ini):'0,00';
+  document.getElementById('saldoIni').value=brlc(ini);
   document.getElementById('saldoIni').style.color=ini<0?'var(--rosa)':'var(--menta)';
 
   /* saldo ao fim de cada dia */
@@ -1161,6 +1227,12 @@ function renderGeral(R,ym){
   if(estaVazio()) return;
 
   const al=[];
+  const nReg=S.lancamentos.length+S.fixos.length+S.parcelas.length+S.entradas.length;
+  if(nReg>4){
+    const dias=S.ultimoBackup?Math.floor((Date.now()-new Date(S.ultimoBackup))/864e5):null;
+    if(dias===null) al.push({t:'alerta',h:`<b>Você ainda não baixou nenhum backup.</b> São ${nReg} registros aqui dentro. <button class="lnk" data-baixar="1">baixar agora</button>`});
+    else if(dias>=10) al.push({t:'alerta',h:`<b>Último backup há ${dias} dias.</b> <button class="lnk" data-baixar="1">baixar agora</button>`});
+  }
   const gCompra=S.lancamentos.filter(l=>mesCompra(l)===ym).reduce((s,l)=>s+l.valor,0);
   const gCaixa=S.lancamentos.filter(l=>l.data&&mesCaixa(l.data,l.pag)===ym).reduce((s,l)=>s+l.valor,0);
   if(!modoCaixa&&Math.abs(gCompra-gCaixa)>0.005){
@@ -1193,8 +1265,8 @@ function renderGeral(R,ym){
 
   const top=[...R.it].sort((a,b)=>b.valor-a.valor).slice(0,7);
   document.getElementById('topMini').innerHTML=top.length?`<table class="tbl">${top.map(i=>`
-    <tr><td class="desc">${esc(i.desc)}</td>
-    <td><span class="chip"><i style="background:${catCor(i.cat)}"></i>${i.cat}</span></td>
+    <tr class="clicavel" data-foco="cat|${esc(i.cat)}"><td class="desc">${esc(i.desc)}</td>
+    <td><span class="chip"><i style="background:${catCor(i.cat)}"></i>${esc(i.cat)}</span></td>
     <td class="r">${brl(i.valor)}</td></tr>`).join('')}</table>`:`<div class="empty">Nada ainda.</div>`;
 
   const f=document.getElementById('fluxo');
@@ -1230,40 +1302,63 @@ function renderGeral(R,ym){
 
 function renderDetalhe(R){
   const box=document.getElementById('detalheCat');
-  if(!catFoco){box.innerHTML='';return}
-  const it=R.it.filter(i=>i.cat===catFoco).sort((a,b)=>b.valor-a.valor);
+  if(!temFoco()){box.innerHTML='';return}
+  let it=R.it;
+  if(foco.cat)  it=it.filter(i=>i.cat===foco.cat);
+  if(foco.sub)  it=it.filter(i=>(i.sub||'(sem)')===foco.sub);
+  if(foco.quem) it=it.filter(i=>i.quem===foco.quem);
+  it=[...it].sort((a,b)=>b.valor-a.valor);
   const tot=it.reduce((s,i)=>s+i.valor,0);
-  const lista=subsDe(catFoco);
-  let porSub='';
-  if(lista.length||it.some(i=>i.sub)){
-    const m={};
-    it.forEach(i=>{const k=i.sub||'sem subcategoria';m[k]=(m[k]||0)+i.valor});
+  const cor=foco.cat?catCor(foco.cat):(foco.quem?quemCor(foco.quem):'var(--orquidea)');
+
+  const chip=(q,txt,c)=>`<button class="chipf" data-limpa="${q}">
+    <i style="background:${c}"></i>${esc(txt)}<b>×</b></button>`;
+  let chips='';
+  if(foco.cat)  chips+=chip('cat',foco.cat,catCor(foco.cat));
+  if(foco.sub)  chips+=chip('sub',foco.sub==='(sem)'?'sem subcategoria':foco.sub,catCor(foco.cat||''));
+  if(foco.quem) chips+=chip('quem',foco.quem,quemCor(foco.quem));
+
+  /* quebra: por subcategoria quando há categoria, por categoria quando não há */
+  let quebra='';
+  if(foco.cat&&!foco.sub){
+    const m={}; it.forEach(i=>{const k=i.sub||'(sem)';m[k]=(m[k]||0)+i.valor});
     const pares=Object.entries(m).sort((a,b)=>b[1]-a[1]);
-    const max=pares[0]?pares[0][1]:1;
-    porSub=`<div style="margin:4px 0 18px">`+pares.map(([k,v])=>`
-      <div class="barrow"><div class="barlbl"><span style="${k==='sem subcategoria'?'color:var(--ink3);font-style:italic':''}">${esc(k)}</span></div>
-      <div class="bartrack"><div class="barfill" style="width:${v/max*100}%;background:${catCor(catFoco)};opacity:${k==='sem subcategoria'?.35:1}"></div></div>
-      <div class="barval">${brl(v)} <span class="barpct">${tot?(v/tot*100).toFixed(0):0}%</span></div></div>`).join('')+`</div>`;
+    if(pares.length>1||pares[0]&&pares[0][0]!=='(sem)'){
+      const max=pares[0][1];
+      const rot=k=>k==='(sem)'?'sem subcategoria':k;
+      quebra=`<div class="grid g21" style="margin:2px 0 18px">
+        <div>${pares.map(([k,v])=>`
+          <div class="barrow clicavel" data-foco="sub|${esc(k)}">
+            <div class="barlbl"><span style="${k==='(sem)'?'color:var(--ink3);font-style:italic':''}">${esc(rot(k))}</span></div>
+            <div class="bartrack"><div class="barfill" style="width:${v/max*100}%;background:${catCor(foco.cat)};opacity:${k==='(sem)'?.35:1}"></div></div>
+            <div class="barval">${brl(v)} <span class="barpct">${tot?(v/tot*100).toFixed(0):0}%</span></div></div>`).join('')}</div>
+        <div>${rosca(pares.map(([k,v])=>[rot(k),v]),tot,()=>catCor(foco.cat),'subcategorias')}</div></div>`;
+    }
+  }else if(!foco.cat){
+    const pares=agrupar(it,'cat');
+    if(pares.length) quebra=`<div style="margin:2px 0 18px">${barras(pares,catCor,tot)}</div>`;
   }
-  box.innerHTML=`<div class="card" style="margin-top:14px;border-top:3px solid ${catCor(catFoco)}">
+
+  box.innerHTML=`<div class="card" style="margin-top:14px;border-top:3px solid ${cor}">
     <div class="foco-topo">
-      <h3 style="margin:0"><span class="chip"><i style="background:${catCor(catFoco)}"></i>${esc(catFoco)}</span>
-        <span class="num" style="font-size:17px;font-weight:500;margin-left:8px">${brl(tot)}</span></h3>
-      <button class="btn ghost sm" data-fechafoco="1">fechar</button>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">${chips}
+        <span class="num" style="font-size:17px;font-weight:500">${brl(tot)}</span></div>
+      <button class="btn ghost sm" data-limpa="tudo">limpar</button>
     </div>
-    <div class="sub" style="margin:0 0 14px">${it.length} ${it.length===1?'lançamento':'lançamentos'} em ${mesLabel(S.mes)} · classifique cada um na coluna Subcategoria abaixo</div>
-    ${porSub}
-    ${it.length?`<div class="scroll"><table class="tbl">
+    <div class="sub" style="margin:0 0 14px">${it.length} ${it.length===1?'lançamento':'lançamentos'} em ${mesLabel(S.mes)}${
+      foco.cat&&!foco.sub?' · toque numa subcategoria acima para afunilar':''}</div>
+    ${quebra}
+    ${it.length?`<div class="scroll"><table class="tbl mob">
       <thead><tr><th>Lançamento</th><th style="width:150px">Subcategoria</th><th class="hide-sm">Quem</th><th class="hide-sm">Pago com</th><th style="text-align:right">Valor</th></tr></thead>
       <tbody>${it.map(i=>{
         const campo=i.tipo==='Fixo'?'fsb':i.tipo==='Parcelado'?'psb':'sb';
         return `<tr>
         <td class="desc">${esc(i.desc)}${i.data?` <span class="mini">${dm(i.data)}</span>`:''}${i.parc?` <span class="pill">${i.parc}</span>`:''}</td>
         <td>${selSub(i.sub,campo,i.id,i.cat)}</td>
-        <td class="hide-sm"><span class="mini">${i.quem}</span></td>
+        <td class="hide-sm"><span class="mini">${esc(i.quem)}</span></td>
         <td class="hide-sm"><span class="mini">${esc(i.pag)}</span></td>
         <td class="r">${brl(i.valor)}</td></tr>`}).join('')}</tbody></table></div>`
-      :`<div class="empty">Nada nesta categoria neste mês.</div>`}
+      :`<div class="empty">Nada com esses filtros neste mês.</div>`}
   </div>`;
 }
 
@@ -1462,6 +1557,7 @@ function renderLanc(ym,R){
   const prevN=ls.filter(l=>l.prev).length;
   document.getElementById('lancCount').textContent=
     `${ls.length} lançamentos · ${brl(ls.reduce((s,l)=>s+l.valor,0))}`+(prevN?` · ${prevN} ainda previstos`:'');
+  document.getElementById('lancTbl').className='tbl mob lanc';
   document.getElementById('lancTbl').innerHTML=
     `<thead><tr><th style="width:34px">Feito</th><th style="width:92px">Data</th><th>Descrição</th><th>Categoria</th>
      <th>Quem</th><th class="hide-sm">Pago com</th><th style="text-align:right">Valor</th><th></th></tr></thead><tbody>`
@@ -1515,11 +1611,17 @@ document.getElementById('prev').onclick=()=>{
 document.getElementById('next').onclick=()=>{S.mes=mesShift(S.mes,1);render()};
 document.body.addEventListener('click',e=>{
   const f=e.target.closest('[data-foco]');
-  if(f){ catFoco=(catFoco===f.dataset.foco)?null:f.dataset.foco;
+  if(f){ const [tipo,val]=f.dataset.foco.split('|');
+    foco[tipo]=(foco[tipo]===val)?null:val;
+    if(tipo==='cat'&&!foco.cat) foco.sub=null;
     if(aba!=='geral'){aba='geral';syncAba()}else render();
-    if(catFoco)setTimeout(()=>{const el=document.getElementById('detalheCat');
+    if(temFoco())setTimeout(()=>{const el=document.getElementById('detalheCat');
       if(el&&el.firstChild)el.scrollIntoView({behavior:'smooth',block:'nearest'})},80);
     return; }
+  const lp=e.target.closest('[data-limpa]');
+  if(lp){ const q=lp.dataset.limpa;
+    if(q==='tudo') foco={cat:null,sub:null,quem:null}; else {foco[q]=null; if(q==='cat')foco.sub=null}
+    render(); return; }
   const b=e.target.closest('#mDec,#mTudo,#mCompra,#mCaixa'); if(!b) return;
   if(b.id==='mDec'||b.id==='mTudo') vista=(b.id==='mDec')?'decisao':'tudo';
   else modoCaixa=(b.id==='mCaixa');
@@ -1623,7 +1725,8 @@ document.body.addEventListener('click',e=>{
   if(d.delfix){S.fixos=S.fixos.filter(x=>x.id!==d.delfix);render()}
   if(d.delparc){S.parcelas=S.parcelas.filter(x=>x.id!==d.delparc);render()}
   if(d.vermodo){modoCaixa=(d.vermodo==='caixa');syncVista();return}
-  if(d.fechafoco){catFoco=null;render();return}
+  if(d.baixar){document.getElementById('backup').click();return}
+  if(d.fechafoco){foco={cat:null,sub:null,quem:null};render();return}
   if(d.novasub){const [campo,id]=d.novasub.split('|');criarSubPara(campo,id);return}
   if(d.pgedit!==undefined) renomearPag(+d.pgedit);
   if(d.pgdel!==undefined) apagarPag(+d.pgdel);
@@ -1778,7 +1881,7 @@ function editarItem(tipo,i){
         [...S.lancamentos,...S.fixos,...S.parcelas].forEach(it=>{if(it[campo]===antigo)it[campo]=n});
         Object.values(S.regras).forEach(r=>{if(r[campo]===antigo)r[campo]=n});
         if(tipo==='cat') subs().forEach(sc=>{if(sc.cat===antigo)sc.cat=n});
-        if(tipo==='cat'&&catFoco===antigo) catFoco=n;
+        if(tipo==='cat'&&foco.cat===antigo) foco.cat=n;
       }
       dF.close();render();toast(n!==antigo?`Renomeada para ${n} em tudo.`:'Cor trocada.');});
 }
@@ -1797,7 +1900,7 @@ function apagarItem(tipo,i){
     o=>{
       [...S.lancamentos,...S.fixos,...S.parcelas].forEach(it=>{if(it[campo]===x.nome)it[campo]=o.destino});
       Object.values(S.regras).forEach(r=>{if(r[campo]===x.nome)r[campo]=o.destino});
-      if(tipo==='cat'){S.subcats=subs().filter(sc=>sc.cat!==x.nome); if(catFoco===x.nome)catFoco=null}
+      if(tipo==='cat'){S.subcats=subs().filter(sc=>sc.cat!==x.nome); if(foco.cat===x.nome)foco={cat:null,sub:null,quem:null}}
       L.splice(L.indexOf(x),1);
       dF.close();render();toast(`${n} ${n===1?'lançamento movido':'lançamentos movidos'} para ${o.destino}.`);});
 }
@@ -1944,11 +2047,12 @@ document.getElementById('exportar').onclick=()=>{
 };
 
 document.getElementById('backup').onclick=()=>{
-  const pacote={arquivo:'painel-financeiro',versao:4,gerado:new Date().toISOString(),dados:S};
+  S.ultimoBackup=new Date().toISOString();
+  const pacote={arquivo:'painel-financeiro',versao:5,gerado:S.ultimoBackup,dados:S};
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(pacote,null,2)],{type:'application/json'}));
   a.download=`backup-financas-${new Date().toISOString().slice(0,10)}.json`;a.click();
-  toast('Backup baixado. Guarde ou me mande pra eu analisar.');
+  salvar(); render(); toast('Backup baixado. Guarde ou me mande pra eu analisar.');
 };
 document.getElementById('restaurar').onclick=()=>document.getElementById('arqBackup').click();
 document.getElementById('arqBackup').onchange=e=>{
@@ -1960,8 +2064,9 @@ document.getElementById('arqBackup').onchange=e=>{
       const d=p.dados||p;
       if(!d.entradas||!d.fixos||!d.parcelas||!d.lancamentos) throw new Error('formato');
       if(!confirm('Isso substitui tudo que está no painel agora. Continuar?')) return;
-      S=d; if(!S.inicio)S.inicio='2026-09'; if(!S.regras)S.regras={};
-      salvar(); render(); toast('Backup restaurado.');
+      S=d; migrar();
+      salvar(); render();
+      toast(`Restaurado: ${S.lancamentos.length} lançamentos, ${S.fixos.length} fixos, ${S.parcelas.length} parcelas.`);
     }catch(err){ toast('Não consegui ler esse arquivo — precisa ser um backup deste painel.'); }
   };
   fr.readAsText(f);
