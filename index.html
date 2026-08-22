@@ -430,6 +430,7 @@ tr.clicavel:hover td{background:#FFF0F6}
       <div class="card"><div id="catFull"></div></div>
       <div class="card"><h3>Fatia de cada uma</h3><div id="roscaAll"></div></div>
     </div>
+    <div id="detalheCat2"></div>
     <div class="card" style="margin-top:14px">
       <h3>Detalhe por categoria</h3>
       <div class="scroll"><table class="tbl" id="catTbl"></table></div>
@@ -568,8 +569,12 @@ const resolveCat=n=>porBase(cats(),n)||'Outros';
 const resolveQuem=n=>porBase(pess(),n)||nomesQuem()[0]||'Thais';
 const subs=()=>(S&&S.subcats)||[];
 const subsDe=cat=>subs().filter(x=>x.cat===cat).map(x=>x.nome);
-let foco={cat:null,sub:null,quem:null};
-const temFoco=()=>!!(foco.cat||foco.sub||foco.quem);
+let foco={cat:null,sub:null,quem:null,tipo:null};
+const temFoco=()=>!!(foco.cat||foco.sub||foco.quem||foco.tipo);
+const limpaFoco=()=>({cat:null,sub:null,quem:null,tipo:null});
+const filtraFoco=arr=>arr.filter(i=>
+  (!foco.cat||i.cat===foco.cat)&&(!foco.sub||(i.sub||'(sem)')===foco.sub)&&
+  (!foco.quem||i.quem===foco.quem)&&(!foco.tipo||i.tipo===foco.tipo));
 const proximaCor=lista=>PALETA.find(c=>!lista.some(x=>x.cor===c))||PALETA[lista.length%PALETA.length];
 
 const catCor=n=>{const c=cats().find(x=>x.nome===n);return c?c.cor:'#C9B3C0'};
@@ -1301,13 +1306,9 @@ function renderGeral(R,ym){
 }
 
 function renderDetalhe(R){
-  const box=document.getElementById('detalheCat');
-  if(!temFoco()){box.innerHTML='';return}
-  let it=R.it;
-  if(foco.cat)  it=it.filter(i=>i.cat===foco.cat);
-  if(foco.sub)  it=it.filter(i=>(i.sub||'(sem)')===foco.sub);
-  if(foco.quem) it=it.filter(i=>i.quem===foco.quem);
-  it=[...it].sort((a,b)=>b.valor-a.valor);
+  const caixas=[document.getElementById('detalheCat'),document.getElementById('detalheCat2')].filter(Boolean);
+  if(!temFoco()){caixas.forEach(b=>b.innerHTML='');return}
+  const it=filtraFoco(R.it).sort((a,b)=>b.valor-a.valor);
   const tot=it.reduce((s,i)=>s+i.valor,0);
   const cor=foco.cat?catCor(foco.cat):(foco.quem?quemCor(foco.quem):'var(--orquidea)');
 
@@ -1317,6 +1318,7 @@ function renderDetalhe(R){
   if(foco.cat)  chips+=chip('cat',foco.cat,catCor(foco.cat));
   if(foco.sub)  chips+=chip('sub',foco.sub==='(sem)'?'sem subcategoria':foco.sub,catCor(foco.cat||''));
   if(foco.quem) chips+=chip('quem',foco.quem,quemCor(foco.quem));
+  if(foco.tipo) chips+=chip('tipo',foco.tipo,'var(--ameixa)');
 
   /* quebra: por subcategoria quando há categoria, por categoria quando não há */
   let quebra='';
@@ -1339,7 +1341,7 @@ function renderDetalhe(R){
     if(pares.length) quebra=`<div style="margin:2px 0 18px">${barras(pares,catCor,tot)}</div>`;
   }
 
-  box.innerHTML=`<div class="card" style="margin-top:14px;border-top:3px solid ${cor}">
+  const html=`<div class="card" style="margin-top:14px;border-top:3px solid ${cor}">
     <div class="foco-topo">
       <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">${chips}
         <span class="num" style="font-size:17px;font-weight:500">${brl(tot)}</span></div>
@@ -1360,6 +1362,7 @@ function renderDetalhe(R){
         <td class="r">${brl(i.valor)}</td></tr>`}).join('')}</tbody></table></div>`
       :`<div class="empty">Nada com esses filtros neste mês.</div>`}
   </div>`;
+  caixas.forEach(b=>b.innerHTML=html);
 }
 
 function renderCat(R){
@@ -1367,13 +1370,14 @@ function renderCat(R){
   const alvo=nomesQuem().join('|');
   if(fq.dataset.lista!==alvo){const v=fq.value;fq.innerHTML='<option value="">Todo mundo</option>';
     nomesQuem().forEach(q=>fq.add(new Option(q,q)));fq.value=v;fq.dataset.lista=alvo}
-  const q=fq.value,t=document.getElementById('fTipo').value;
-  let it=R.it;
-  if(q)it=it.filter(i=>i.quem===q);
-  if(t)it=it.filter(i=>i.tipo===t);
+  fq.value=foco.quem||'';
+  const ft=document.getElementById('fTipo'); ft.value=foco.tipo||'';
+  const semCat={...foco,cat:null,sub:null};
+  const it=R.it.filter(i=>(!semCat.quem||i.quem===semCat.quem)&&(!semCat.tipo||i.tipo===semCat.tipo));
   document.getElementById('catFull').innerHTML=graficoCategorias(it,R.entrada,mapaAnterior(S.mes));
   const tot=it.reduce((s,i)=>s+i.valor,0);
-  document.getElementById('roscaAll').innerHTML=rosca(agrupar(it,'cat'),tot,catCor,'no filtro');
+  document.getElementById('roscaAll').innerHTML=rosca(agrupar(it,'cat'),tot,catCor,
+    foco.quem?esc(foco.quem).toLowerCase():'no filtro');
   renderListas();
 
   const porCat={};it.forEach(i=>{(porCat[i.cat]=porCat[i.cat]||[]).push(i)});
@@ -1614,13 +1618,14 @@ document.body.addEventListener('click',e=>{
   if(f){ const [tipo,val]=f.dataset.foco.split('|');
     foco[tipo]=(foco[tipo]===val)?null:val;
     if(tipo==='cat'&&!foco.cat) foco.sub=null;
-    if(aba!=='geral'){aba='geral';syncAba()}else render();
-    if(temFoco())setTimeout(()=>{const el=document.getElementById('detalheCat');
+    if(aba!=='geral'&&aba!=='cat'){aba='geral';syncAba()}else render();
+    if(temFoco())setTimeout(()=>{
+      const el=document.getElementById(aba==='cat'?'detalheCat2':'detalheCat');
       if(el&&el.firstChild)el.scrollIntoView({behavior:'smooth',block:'nearest'})},80);
     return; }
   const lp=e.target.closest('[data-limpa]');
   if(lp){ const q=lp.dataset.limpa;
-    if(q==='tudo') foco={cat:null,sub:null,quem:null}; else {foco[q]=null; if(q==='cat')foco.sub=null}
+    if(q==='tudo') foco=limpaFoco(); else {foco[q]=null; if(q==='cat')foco.sub=null}
     render(); return; }
   const b=e.target.closest('#mDec,#mTudo,#mCompra,#mCaixa'); if(!b) return;
   if(b.id==='mDec'||b.id==='mTudo') vista=(b.id==='mDec')?'decisao':'tudo';
@@ -1641,7 +1646,8 @@ function syncAba(){
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+aba));
   render();
 }
-['fQuem','fTipo'].forEach(id=>document.getElementById(id).onchange=render);
+document.getElementById('fQuem').onchange=e=>{foco.quem=e.target.value||null;render()};
+document.getElementById('fTipo').onchange=e=>{foco.tipo=e.target.value||null;render()};
 
 function lancarRapido(){
   const d=document.getElementById('qDesc').value.trim();
@@ -1726,7 +1732,7 @@ document.body.addEventListener('click',e=>{
   if(d.delparc){S.parcelas=S.parcelas.filter(x=>x.id!==d.delparc);render()}
   if(d.vermodo){modoCaixa=(d.vermodo==='caixa');syncVista();return}
   if(d.baixar){document.getElementById('backup').click();return}
-  if(d.fechafoco){foco={cat:null,sub:null,quem:null};render();return}
+  if(d.fechafoco){foco=limpaFoco();render();return}
   if(d.novasub){const [campo,id]=d.novasub.split('|');criarSubPara(campo,id);return}
   if(d.pgedit!==undefined) renomearPag(+d.pgedit);
   if(d.pgdel!==undefined) apagarPag(+d.pgdel);
@@ -1900,7 +1906,7 @@ function apagarItem(tipo,i){
     o=>{
       [...S.lancamentos,...S.fixos,...S.parcelas].forEach(it=>{if(it[campo]===x.nome)it[campo]=o.destino});
       Object.values(S.regras).forEach(r=>{if(r[campo]===x.nome)r[campo]=o.destino});
-      if(tipo==='cat'){S.subcats=subs().filter(sc=>sc.cat!==x.nome); if(foco.cat===x.nome)foco={cat:null,sub:null,quem:null}}
+      if(tipo==='cat'){S.subcats=subs().filter(sc=>sc.cat!==x.nome); if(foco.cat===x.nome)foco=limpaFoco()}
       L.splice(L.indexOf(x),1);
       dF.close();render();toast(`${n} ${n===1?'lançamento movido':'lançamentos movidos'} para ${o.destino}.`);});
 }
