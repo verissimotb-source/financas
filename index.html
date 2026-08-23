@@ -323,14 +323,11 @@ tr.clicavel:hover td{background:#FFF0F6}
         <span id="tagPrev"></span>
       </div>
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <div>
+      <div class="eyebrow" style="margin-bottom:6px;text-align:right">Contar o gasto</div>
       <div class="toggle" role="group" aria-label="Regime de contagem">
-        <button id="mCompra" aria-pressed="true">Quando gastei</button>
-        <button id="mCaixa" aria-pressed="false">Quando pago</button>
-      </div>
-      <div class="toggle" role="group" aria-label="Como agrupar">
-        <button id="mDec" aria-pressed="true">Por decisão</button>
-        <button id="mTudo" aria-pressed="false">Tudo junto</button>
+        <button id="mCaixa" aria-pressed="true">Quando pago</button>
+        <button id="mCompra" aria-pressed="false">Quando gastei</button>
       </div>
     </div>
   </div>
@@ -731,7 +728,7 @@ const VAZIO={
    se já houver lançamentos salvos, eles têm prioridade e nada é sobrescrito. */
 /* versão limpa: sem dados embutidos */
 
-let S=null, vista='decisao', aba='geral', salvando=null;
+let S=null, aba='geral', salvando=null;
 
 const brl=n=>(n<0?'−':'')+'R$ '+Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const brlc=n=>Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -817,14 +814,21 @@ function migrar(){
     S.confCartoes[c]={fech:x.fech||18, venc:x.venc||(x.seguinte?5:25)}});
   S.v=5;
 }
+/* Abre sempre no mês de hoje. Se hoje for anterior ao primeiro mês
+   com lançamento, abre no mais antigo que existe. */
+function mesDeAbertura(){
+  const hoje=hojeYM(), piso=mesMinimo();
+  return mesDiff(hoje,piso)>=0 ? hoje : piso;
+}
 async function carregar(){
   await Store.init();
   const txt=await Store.ler();
   if(txt){ try{ const g=JSON.parse(txt);
     if(g&&Array.isArray(g.lancamentos)&&g.lancamentos.length+g.fixos.length+g.entradas.length>0){
-      S=g; migrar(); return; } }catch(e){} }
-  /* navegador vazio: entra com os dados do seu backup */
+      S=g; migrar(); S.mes=mesDeAbertura(); return; } }catch(e){} }
+  /* primeira vez: começa no mês corrente */
   S=JSON.parse(JSON.stringify(VAZIO));
+  S.inicio=hojeYM(); S.mes=hojeYM();
   migrar(); salvar();
 }
 
@@ -835,7 +839,7 @@ async function carregar(){
    A regra do cartão (fecha dia / vence dia) só gera o palpite inicial.
    Cada fatura pode ter suas três datas corrigidas na mão, mês a mês,
    e o que você escreveu sempre ganha da regra. */
-let modoCaixa=false;
+let modoCaixa=true;
 const ehCartao=pag=>S.cartoes.includes(pag);
 function confCartao(pag){
   const c=(S.confCartoes||{})[pag]||{};
@@ -1087,10 +1091,6 @@ function bloco(titulo,sub,pares,total,anterior,extra){
     ${extra?`<div class="sub" style="margin-top:11px">${extra}</div>`:''}</div>`;
 }
 function graficoCategorias(it,entrada,antMap){
-  if(vista==='tudo'){
-    const t=it.reduce((s,i)=>s+i.valor,0);
-    return bloco('Todas as categorias','Uma escala só — os fixos grandes achatam o resto.',agrupar(it,'cat'),t,antMap&&antMap.tudo,'');
-  }
   const comp=it.filter(i=>i.tipo!=='Variável'),escl=it.filter(i=>i.tipo==='Variável');
   const tc=comp.reduce((s,i)=>s+i.valor,0),te=escl.reduce((s,i)=>s+i.valor,0);
   const mor=comp.filter(i=>i.cat==='Moradia').reduce((s,i)=>s+i.valor,0);
@@ -1246,9 +1246,8 @@ function renderGeral(R,ym){
   if(modoCaixa){
     const vindas=S.lancamentos.filter(l=>l.data&&mesCaixa(l.data,l.pag)===ym&&mesCompra(l)!==ym);
     const soma=vindas.reduce((s,l)=>s+l.valor,0);
-    al.push({t:'aviso-caixa',h:vindas.length
-      ? `<b>Contando pelo mês em que você paga.</b> ${vindas.length} ${vindas.length===1?'compra de mês anterior cai':'compras de meses anteriores caem'} aqui — ${brl(soma)} — porque ${vindas.length===1?'entrou numa fatura paga':'entraram em faturas pagas'} agora.`
-      : `<b>Contando pelo mês em que você paga.</b> Cada gasto entra no mês em que o dinheiro sai da conta. <button class="lnk" data-vermodo="compra">ver por quando eu gastei</button>`});
+    if(vindas.length) al.push({t:'aviso-caixa',
+      h:`${vindas.length} ${vindas.length===1?'compra de mês anterior cai':'compras de meses anteriores caem'} aqui — ${brl(soma)} — porque ${vindas.length===1?'entrou numa fatura paga':'entraram em faturas pagas'} neste mês. <button class="lnk" data-vermodo="compra">ver por quando eu gastei</button>`});
   }
   const semRegra=R.it.filter(i=>i.cat==='Outros');
   if(semRegra.length) al.push({t:'alerta',h:`<b>${semRegra.length} lançamentos sem categoria.</b> Estão em "Outros" — ajuste na aba Lançamentos e vira regra: ${semRegra.slice(0,4).map(i=>esc(i.desc)).join(', ')}${semRegra.length>4?'…':''}`});
@@ -1627,15 +1626,11 @@ document.body.addEventListener('click',e=>{
   if(lp){ const q=lp.dataset.limpa;
     if(q==='tudo') foco=limpaFoco(); else {foco[q]=null; if(q==='cat')foco.sub=null}
     render(); return; }
-  const b=e.target.closest('#mDec,#mTudo,#mCompra,#mCaixa'); if(!b) return;
-  if(b.id==='mDec'||b.id==='mTudo') vista=(b.id==='mDec')?'decisao':'tudo';
-  else modoCaixa=(b.id==='mCaixa');
+  const b=e.target.closest('#mCompra,#mCaixa'); if(!b) return;
+  modoCaixa=(b.id==='mCaixa');
   syncVista();
 });
 function syncVista(){
-  const d=document.getElementById('mDec'),t=document.getElementById('mTudo');
-  if(d) d.setAttribute('aria-pressed',vista==='decisao');
-  if(t) t.setAttribute('aria-pressed',vista==='tudo');
   document.getElementById('mCompra').setAttribute('aria-pressed',!modoCaixa);
   document.getElementById('mCaixa').setAttribute('aria-pressed',modoCaixa);
   render();
