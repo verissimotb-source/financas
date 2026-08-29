@@ -976,6 +976,7 @@ function render(){
   if(aba==='fat')renderFat(R);
   if(aba==='fix')renderFix(ym);
   if(aba==='lanc')renderLanc(ym,R);
+  if(aba==='geral'||aba==='cat') renderDetalhe(R);
   salvar();
 }
 
@@ -1265,7 +1266,6 @@ function renderGeral(R,ym){
   const escl=R.it.filter(i=>i.tipo==='Variável');
   document.getElementById('roscaEsc').innerHTML=rosca(agrupar(escl,'cat'),escl.reduce((s,i)=>s+i.valor,0),catCor,'variável');
   document.getElementById('quemMini').innerHTML=barras(agrupar(R.it,'quem'),quemCor,R.saida);
-  renderDetalhe(R);
 
   const top=[...R.it].sort((a,b)=>b.valor-a.valor).slice(0,7);
   document.getElementById('topMini').innerHTML=top.length?`<table class="tbl">${top.map(i=>`
@@ -1651,12 +1651,20 @@ function lancarRapido(){
   const data=document.getElementById('qData').value;
   const mes=data?data.slice(0,7):S.mes;
   const {cat,quem}=classificar(d);
-  S.lancamentos.push({id:uid(),desc:d,valor:v,data,mes,cat,quem,prev:futuro(mes),
-    pag:document.getElementById('qPag').value});
+  const novo={id:uid(),desc:d,valor:v,data,mes,cat,quem,prev:futuro(mes),
+    pag:document.getElementById('qPag').value};
+  S.lancamentos.push(novo);
   document.getElementById('qDesc').value='';document.getElementById('qVal').value='';
   document.getElementById('qDesc').focus();
-  toast(cat==='Outros'?`${d} entrou sem categoria — escolhe embaixo.`
-    :`${d} → ${cat} · ${quem}${futuro(mes)?' (previsto)':''}`);
+  /* onde ele vai aparecer, conforme o modo escolhido */
+  const destino=mesDoLanc(novo);
+  if(destino!==S.mes){
+    S.mes=destino;
+    toast(`${d} caiu em ${mesLabel(destino)} pela data — te levei pra lá.`);
+  }else{
+    toast(cat==='Outros'?`${d} entrou sem categoria — escolhe embaixo.`
+      :`${d} → ${cat} · ${quem}${futuro(mes)?' (previsto)':''}`);
+  }
   render();
 }
 document.getElementById('qAdd').onclick=lancarRapido;
@@ -1793,7 +1801,19 @@ document.getElementById('revTbl').addEventListener('change',e=>{
 document.getElementById('revCancel').onclick=()=>dR.close();
 document.getElementById('revGo').onclick=()=>{
   pendente.forEach(x=>{salvarRegra(x.desc,x.cat,x.quem);S.lancamentos.push(x)});
-  toast(`${pendente.length} lançamentos entraram.`);pendente=[];dR.close();render();
+  const aqui=pendente.filter(x=>mesDoLanc(x)===S.mes).length;
+  const n=pendente.length;
+  if(!aqui&&n){
+    const conta={}; pendente.forEach(x=>{const m=mesDoLanc(x);conta[m]=(conta[m]||0)+1});
+    const maior=Object.entries(conta).sort((a,b)=>b[1]-a[1])[0][0];
+    S.mes=maior;
+    toast(`${n} lançamentos caíram em ${mesLabel(maior)} pelas datas — te levei pra lá.`);
+  }else if(aqui<n){
+    toast(`${n} entraram — ${aqui} neste mês, ${n-aqui} em outros pelas datas.`);
+  }else{
+    toast(`${n} lançamentos entraram.`);
+  }
+  pendente=[];dR.close();render();
 };
 
 const dF=document.getElementById('dlgForm');let formGo=null;
