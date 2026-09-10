@@ -474,6 +474,7 @@ tr.quitada td.desc{text-decoration:line-through}
     <button role="tab" data-v="fat" aria-selected="false">Faturas</button>
     <button role="tab" data-v="fix" aria-selected="false">Fixos &amp; parcelas</button>
     <button role="tab" data-v="lanc" aria-selected="false">Lançamentos</button>
+    <button role="tab" data-v="ajustes" aria-selected="false">Ajustes</button>
   </div>
 
   <div class="view on" id="v-geral">
@@ -557,43 +558,11 @@ tr.quitada td.desc{text-decoration:line-through}
       <h3>Detalhe por categoria</h3>
       <div class="scroll"><table class="tbl mob cat" id="catTbl"></table></div>
     </div>
-    <div class="grid g2" style="margin-top:14px">
-      <div class="card">
-        <h3>Suas categorias <button class="btn ghost sm" id="addCat">+ Nova</button></h3>
-        <div class="sub" style="margin-top:-8px;margin-bottom:12px">Renomeie, mude a cor, crie as suas. Ao corrigir um lançamento para a categoria nova, ela aprende a palavra e passa a usar sozinha.</div>
-        <table class="tbl" id="listaCat"></table>
-      </div>
-      <div class="card">
-        <h3>Limites de gasto <button class="btn ghost sm" id="addLim">+ Novo</button></h3>
-        <div class="sub" style="margin-top:-8px;margin-bottom:12px">Defina um teto para uma categoria ou para uma pessoa. Quando passar de 70%, aparece um aviso na Visão geral.</div>
-        <div id="listaLim"></div>
-      </div>
-      <div class="card">
-        <h3>Subcategorias <button class="btn ghost sm" id="addSub">+ Nova</button></h3>
-        <div class="sub" style="margin-top:-8px;margin-bottom:12px">Cada uma pertence a uma categoria. Em Alimentação você pode ter Mercado, Porcaria, Higiene — e escolher a cada compra, já que o mesmo mercado às vezes é uma coisa, às vezes outra.</div>
-        <table class="tbl" id="listaSub"></table>
-      </div>
-      <div class="card">
-        <h3>Palavras aprendidas <button class="btn ghost sm" id="addRegra">+ Nova</button></h3>
-        <div class="sub" style="margin-top:-8px;margin-bottom:12px">Toda vez que você corrige um lançamento, a palavra fica guardada aqui e passa a valer mais que o dicionário de fábrica. Apague qualquer uma que tenha ficado errada.</div>
-        <div class="scroll"><table class="tbl" id="listaRegras"></table></div>
-      </div>
-      <div class="card">
-        <h3>Quem <button class="btn ghost sm" id="addQuem">+ Nova</button></h3>
-        <div class="sub" style="margin-top:-8px;margin-bottom:12px">Quem se beneficiou do gasto. Independente da categoria — "material de escola da filha" pode ser Escola <i>e</i> Filhos ao mesmo tempo.</div>
-        <table class="tbl" id="listaQuem"></table>
-      </div>
-    </div>
   </div>
 
   <div class="view" id="v-fat">
     <div class="note"><span>◆</span><div>Cada cartão mostra a fatura <b>paga</b> no mês escolhido. As três datas são editáveis: mude o vencimento e o intervalo de compras sempre que o banco fugir do padrão.</div></div>
     <div id="faturas" class="grid g2"></div>
-    <div class="card" style="margin-top:14px">
-      <h3>Formas de pagamento <button class="btn ghost sm" id="addPag">+ Nova</button></h3>
-      <div class="sub" style="margin-top:-8px;margin-bottom:12px">Adicione seus cartões e contas. Marcar como <b>Cartão</b> faz a compra cair na fatura em vez de sair na hora — e os dias aqui só preenchem as datas de cada fatura pela primeira vez. Corrija mês a mês ali em cima quando o banco mudar.</div>
-      <div id="confCart"></div>
-    </div>
   </div>
 
   <div class="view" id="v-fix">
@@ -630,6 +599,45 @@ tr.quitada td.desc{text-decoration:line-through}
         <button class="btn ghost sm" id="copiarEnt">Copiar do mês anterior</button>
         <button class="btn ghost sm" id="addEntrada">+ Entrada</button></span></h3>
       <table class="tbl mob ent" id="entTbl"></table>
+    </div>
+  </div>
+
+  <div class="view" id="v-ajustes">
+    <div class="note"><span>◆</span><div>Tudo que você configura uma vez e não mexe mais. As outras abas ficam só com os números.</div></div>
+
+    <div class="card">
+      <h3>Limites de gasto <button class="btn ghost sm" id="addLim">+ Novo</button></h3>
+      <div class="sub" style="margin-top:-8px;margin-bottom:12px">Um teto por mês. Pode ser por categoria, por pessoa, ou pelos dois juntos — tipo "Alimentação da Laura". Ao passar de 70%, aparece aviso na Visão geral.</div>
+      <div id="listaLim"></div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h3>Formas de pagamento <button class="btn ghost sm" id="addPag">+ Nova</button></h3>
+      <div class="sub" style="margin-top:-8px;margin-bottom:12px">Seus cartões e contas. Marcar como <b>Cartão</b> faz a compra cair na fatura em vez de sair na hora. Os dias aqui preenchem as datas de cada fatura pela primeira vez — depois você corrige mês a mês na aba Faturas.</div>
+      <div id="confCart"></div>
+    </div>
+
+    <div class="grid g2" style="margin-top:14px">
+      <div class="card">
+        <h3>Categorias <button class="btn ghost sm" id="addCat">+ Nova</button></h3>
+        <div class="sub" style="margin-top:-8px;margin-bottom:12px">Renomeie, mude a cor, crie as suas. Ao corrigir um lançamento para a categoria nova, ela aprende a palavra e passa a usar sozinha.</div>
+        <table class="tbl" id="listaCat"></table>
+      </div>
+      <div class="card">
+        <h3>Subcategorias <button class="btn ghost sm" id="addSub">+ Nova</button></h3>
+        <div class="sub" style="margin-top:-8px;margin-bottom:12px">Cada uma pertence a uma categoria. Em Alimentação você pode ter Mercado, Porcaria, Higiene — e escolher a cada compra.</div>
+        <table class="tbl" id="listaSub"></table>
+      </div>
+      <div class="card">
+        <h3>Quem <button class="btn ghost sm" id="addQuem">+ Nova</button></h3>
+        <div class="sub" style="margin-top:-8px;margin-bottom:12px">Quem se beneficiou do gasto. Independente da categoria — "material de escola da filha" pode ser Escola <i>e</i> Filhos ao mesmo tempo.</div>
+        <table class="tbl" id="listaQuem"></table>
+      </div>
+      <div class="card">
+        <h3>Palavras aprendidas <button class="btn ghost sm" id="addRegra">+ Nova</button></h3>
+        <div class="sub" style="margin-top:-8px;margin-bottom:12px">Toda vez que você corrige um lançamento, a palavra fica guardada aqui e passa a valer mais que o dicionário de fábrica.</div>
+        <div class="scroll"><table class="tbl" id="listaRegras"></table></div>
+      </div>
     </div>
   </div>
 
@@ -953,6 +961,14 @@ function migrar(){
   if(!S.ciclos)S.ciclos={};
   if(!S.saldoIni)S.saldoIni={};
   if(!S.subcats)S.subcats=[];
+  if(!S.apagados)S.apagados={};
+  if(!S.quitado)S.quitado={};
+  if(!S.confere)S.confere={};
+  if(!S.limites)S.limites=[];
+  /* limite no formato antigo {tipo,alvo} vira {cat,quem} */
+  S.limites=S.limites.map(l=>l&&l.tipo
+    ? {cat:l.tipo==='cat'?l.alvo:null, quem:l.tipo==='quem'?l.alvo:null, valor:l.valor}
+    : l).filter(l=>l&&(l.cat||l.quem));
   if(!S.pagamentos||!S.pagamentos.length)S.pagamentos=VAZIO.pagamentos.slice();
   if(!S.cartoes)S.cartoes=[];
   ['entradas','fixos','parcelas','lancamentos'].forEach(k=>{if(!Array.isArray(S[k]))S[k]=[]});
@@ -1226,6 +1242,7 @@ function render(){
   if(aba==='fat')renderFat(R);
   if(aba==='fix')renderFix(ym);
   if(aba==='lanc')renderLanc(ym,R);
+  if(aba==='ajustes'){renderListas();renderLimites(R);renderPagamentos();}
   if(aba==='geral'||aba==='cat') renderDetalhe(R);
   salvar();
 }
@@ -1595,9 +1612,9 @@ function renderGeral(R,ym){
   }
   statusLimites(R).filter(x=>x.pct>=70).forEach(x=>{
     al.push({t:x.pct>=100?'alerta':'', h:
-      `<b>${esc(x.alvo)}: ${brl(x.usados)} de ${brl(x.valor)}</b> — ${x.pct.toFixed(0)}% do que você definiu.
+      `<b>${esc(x.rotulo)}: ${brl(x.usados)} de ${brl(x.valor)}</b> — ${x.pct.toFixed(0)}% do que você definiu.
        ${x.pct>=100?`Passou <b>${brl(x.usados-x.valor)}</b>.`:`Faltam ${brl(x.valor-x.usados)} para o teto.`}
-       <button class="lnk" data-foco="${x.tipo==='cat'?'cat':'quem'}|${esc(x.alvo)}">ver os gastos</button>`});
+       <button class="lnk" data-limite="${esc(x.cat||'')}|${esc(x.quem||'')}">ver os gastos</button>`});
   });
   const semRegra=R.it.filter(i=>i.cat==='Outros');
   if(semRegra.length) al.push({t:'alerta',h:`<b>${semRegra.length} lançamentos sem categoria.</b> Estão em "Outros" — ajuste na aba Lançamentos e vira regra: ${semRegra.slice(0,4).map(i=>esc(i.desc)).join(', ')}${semRegra.length>4?'…':''}`});
@@ -1733,12 +1750,14 @@ function agruparSub(it){
 }
 
 /* Quanto já foi gasto contra cada teto definido */
+const rotuloLimite=l=>[l.cat,l.quem].filter(Boolean).join(' · ');
 function statusLimites(R){
   return (S.limites||[]).map(l=>{
-    const usados=R.it.filter(i=>l.tipo==='cat'?i.cat===l.alvo:i.quem===l.alvo)
+    const usados=R.it.filter(i=>(!l.cat||i.cat===l.cat)&&(!l.quem||i.quem===l.quem))
                       .reduce((s,i)=>s+i.valor,0);
     const pct=l.valor?usados/l.valor*100:0;
-    return {...l, usados, pct, cor:l.tipo==='cat'?catCor(l.alvo):quemCor(l.alvo)};
+    return {...l, usados, pct, rotulo:rotuloLimite(l),
+            cor: l.cat?catCor(l.cat):quemCor(l.quem)};
   }).sort((a,b)=>b.pct-a.pct);
 }
 function renderLimites(R){
@@ -1747,7 +1766,7 @@ function renderLimites(R){
   const st=statusLimites(R);
   if(!st.length){
     box.innerHTML=`<div class="empty" style="padding:20px"><b>Nenhum limite ainda</b>
-      Um teto para Alimentação, ou para tudo que é dos filhos. Você escolhe.</div>`;
+      Um teto para Alimentação, para tudo que é dos filhos, ou para os dois juntos.</div>`;
     return;
   }
   box.innerHTML=st.map((x,i)=>`
@@ -1755,7 +1774,7 @@ function renderLimites(R){
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:9px">
         <div style="font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:7px">
           <i style="width:9px;height:9px;border-radius:3px;background:${x.cor};display:block"></i>
-          ${esc(x.alvo)} <span class="mini">${x.tipo==='cat'?'categoria':'pessoa'}</span></div>
+          ${esc(x.rotulo)} <span class="mini">${x.cat&&x.quem?'categoria + pessoa':x.cat?'categoria':'pessoa'}</span></div>
         <div style="display:flex;gap:8px;align-items:center">
           <span class="num" style="font-size:12.5px;font-weight:500">${brl(x.usados)} / ${brl(x.valor)}</span>
           <button class="btn ghost sm" data-dellim="${i}">×</button></div>
@@ -1908,8 +1927,13 @@ function renderFat(R){
       `<tr><td class="desc">${esc(i.desc)}</td><td><span class="mini">${i.pag}</span></td><td class="r">${brl(i.valor)}</td></tr>`).join('')}</table>`
       :`<div class="empty">Nada por aqui.</div>`}</div>`;
 
+}
+
+function renderPagamentos(){
   const hj=new Date(), ex=`${hj.getFullYear()}-${String(hj.getMonth()+1).padStart(2,'0')}-20`;
-  document.getElementById('confCart').innerHTML=
+  const alvo=document.getElementById('confCart');
+  if(!alvo) return;
+  alvo.innerHTML=
     `<table class="tbl"><thead><tr><th>Forma</th><th style="width:112px">Tipo</th>
      <th style="width:76px">Fecha</th><th style="width:76px">Vence</th><th class="hide-sm">Confira</th><th></th></tr></thead><tbody>`
     +S.pagamentos.map((pg,ip)=>{
@@ -2188,6 +2212,12 @@ document.body.addEventListener('click',e=>{
   if(d.delent){S.entradas=apagar(S.entradas,d.delent);render()}
   if(d.delfix){S.fixos=apagar(S.fixos,d.delfix);render()}
   if(d.delparc){S.parcelas=apagar(S.parcelas,d.delparc);render()}
+  if(d.limite!==undefined){
+    const [c,q]=d.limite.split('|');
+    foco={cat:c||null, sub:null, quem:q||null, tipo:null};
+    if(aba!=='geral'&&aba!=='cat'){aba='geral';syncAba()}else render();
+    return;
+  }
   if(d.vermodo){modoCaixa=(d.vermodo==='caixa');syncVista();return}
   if(d.baixar){document.getElementById('backup').click();return}
   if(d.veraba){aba=d.veraba;syncAba();return}
@@ -2496,20 +2526,24 @@ function novaRegra(){
 }
 document.getElementById('addRegra').onclick=novaRegra;
 
+const QUALQUER='— qualquer —';
 function novoLimite(){
-  abrirForm('Novo limite de gasto','Um teto mensal. Ao passar de 70%, aparece aviso na Visão geral.',
-    [{k:'tipo',lbl:'Limitar por',tipo:'select',opts:['Categoria','Pessoa']},
-     {k:'alvo',lbl:'Qual',tipo:'select',opts:[...nomesCat(),...nomesQuem()]},
+  abrirForm('Novo limite de gasto',
+    'Escolha categoria, pessoa, ou os dois. Deixando um em "qualquer", ele não entra na conta.',
+    [{k:'cat',lbl:'Categoria',tipo:'select',opts:[QUALQUER,...nomesCat()]},
+     {k:'quem',lbl:'Pessoa',tipo:'select',opts:[QUALQUER,...nomesQuem()]},
      {k:'valor',lbl:'Teto por mês',num:1,ph:'800,00'}],
-    o=>{const v=parseVal(o.valor);
+    o=>{
+      const v=parseVal(o.valor);
+      const cat=o.cat===QUALQUER?null:o.cat;
+      const quem=o.quem===QUALQUER?null:o.quem;
       if(!v){toast('Escreva o valor do teto.');return}
-      const tipo=o.tipo==='Categoria'?'cat':'quem';
-      const valido=tipo==='cat'?nomesCat().includes(o.alvo):nomesQuem().includes(o.alvo);
-      if(!valido){toast(`"${o.alvo}" não é uma ${o.tipo.toLowerCase()}. Escolha outra.`);return}
+      if(!cat&&!quem){toast('Escolha ao menos uma categoria ou uma pessoa.');return}
       S.limites=S.limites||[];
-      const ja=S.limites.findIndex(l=>l.tipo===tipo&&l.alvo===o.alvo);
-      if(ja>=0) S.limites[ja].valor=v; else S.limites.push({tipo,alvo:o.alvo,valor:v});
-      dF.close();render();toast(`Teto de ${brl(v)} para ${o.alvo}.`);});
+      const ja=S.limites.findIndex(l=>(l.cat||null)===cat&&(l.quem||null)===quem);
+      if(ja>=0) S.limites[ja].valor=v; else S.limites.push({cat,quem,valor:v});
+      dF.close();render();
+      toast(`Teto de ${brl(v)} para ${[cat,quem].filter(Boolean).join(' · ')}.`);});
 }
 document.getElementById('addLim').onclick=novoLimite;
 document.getElementById('addSub').onclick=novaSub;
