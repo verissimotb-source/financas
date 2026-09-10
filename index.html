@@ -332,15 +332,20 @@ tr.clicavel:hover td{background:#FFF0F6}
   .tbl.ent tbody tr>td:nth-child(2){grid-column:1/3;grid-row:2;max-width:90px}
   .tbl.ent tbody tr>td:nth-child(4){grid-column:1/3;grid-row:3;justify-self:start}
 
-  /* fluxo: pago | o que | saldo / dia+valores */
-  .tbl.fluxo tbody tr{grid-template-columns:26px 1fr auto}
+  /* fluxo no celular:
+     linha 1  [check] descrição ............ valor
+     linha 2          etiqueta de origem
+     linha 3          dia .............. saldo depois */
+  .tbl.fluxo tbody tr{grid-template-columns:26px 1fr auto;gap:5px 9px}
   .tbl.fluxo tbody tr>td:nth-child(1){grid-column:1;grid-row:1}
-  .tbl.fluxo tbody tr>td:nth-child(3){grid-column:2;grid-row:1;font-size:14.5px}
-  .tbl.fluxo tbody tr>td:nth-child(6){grid-column:3;grid-row:1;text-align:right}
-  .tbl.fluxo tbody tr>td:nth-child(2){grid-column:2;grid-row:2}
-  .tbl.fluxo tbody tr>td:nth-child(2)::before{content:"dia ";color:var(--ink3);font-size:11px}
-  .tbl.fluxo tbody tr>td:nth-child(4),
-  .tbl.fluxo tbody tr>td:nth-child(5){grid-column:3;grid-row:2;text-align:right;font-size:13px}
+  .tbl.fluxo tbody tr>td:nth-child(3){grid-column:2;grid-row:1;font-size:15px;font-weight:600}
+  .tbl.fluxo tbody tr>td:nth-child(5){grid-column:3;grid-row:1;text-align:right;font-size:16px}
+  .tbl.fluxo tbody tr>td:nth-child(4){grid-column:2/4;grid-row:2}
+  .tbl.fluxo tbody tr>td:nth-child(2){grid-column:2;grid-row:3;font-size:12px;color:var(--ink3)}
+  .tbl.fluxo tbody tr>td:nth-child(2)::before{content:"dia "}
+  .tbl.fluxo tbody tr>td:nth-child(6){grid-column:3;grid-row:3;text-align:right;font-size:12px}
+  .tbl.fluxo tbody tr>td:nth-child(6)::before{content:"saldo ";color:var(--ink3)}
+  .tbl.fluxo tr.inicial td:nth-child(3){grid-column:2/4}
 
   /* planejamento e detalhe: rolam na horizontal, são leitura */
   .tbl.plano,.tbl.cat{display:table;min-width:520px}
@@ -384,6 +389,40 @@ tr.quitada td.desc{text-decoration:line-through}
 .pend-item span{flex:1}
 .pend-item b{font-family:"DM Mono",monospace;font-weight:500;font-size:13.5px}
 @media (min-width:620px){.conf-linha{grid-template-columns:1fr 1fr;gap:22px}}
+/* fluxo: o valor é o que importa, o saldo é contexto */
+.tbl.fluxo .valor{font-size:14.5px}
+.tbl.fluxo .saldo{font-size:12.5px;opacity:.6}
+.tbl.fluxo tr.inicial td{color:var(--ink3);font-style:italic}
+.et{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:3px 8px;border-radius:20px;white-space:nowrap}
+.et-entrada{background:rgba(95,201,168,.18);color:#137A5A}
+.et-fixo{background:#EDE9F2;color:var(--ameixa)}
+.et-parcela{background:#F5E7FB;color:#8A45B0}
+.et-gasto{background:#FFEDE9;color:#C4472F}
+.et-fatura{background:#FFE9F2;color:var(--rosa)}
+/* lista do que sai */
+.ev{display:grid;grid-template-columns:30px 1fr auto;gap:12px;align-items:center;padding:13px 0;border-top:1px solid var(--line2)}
+.ev:first-child{border-top:0}
+.ev-chk{display:flex;align-items:center;justify-content:center}
+.ev-nome{font-size:15px;font-weight:500;line-height:1.3}
+.ev-marcas{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.etq{font-size:10.5px;color:var(--ink2);background:#FDF2F7;border:1px solid var(--line);
+  border-radius:20px;padding:2px 8px;white-space:nowrap}
+.etq.dia{background:var(--vinho,#3D2233);color:#fff;border-color:transparent;font-family:"DM Mono",monospace}
+.ev-val{font-family:"DM Mono",monospace;font-size:15.5px;font-weight:500;white-space:nowrap;letter-spacing:-.03em}
+.ev-val.pos{color:var(--menta)}
+.ev.ok{opacity:.45}
+.ev.ok .ev-nome{text-decoration:line-through}
+.jasaiu{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+.jasaiu>summary{cursor:pointer;list-style:none;font-size:13.5px;font-weight:600;color:var(--ink2);
+  display:flex;justify-content:space-between;align-items:center;gap:10px}
+.jasaiu>summary::-webkit-details-marker{display:none}
+.jasaiu>summary::after{content:"+";font-family:"DM Mono",monospace;color:var(--rosa);font-size:18px}
+.jasaiu[open]>summary::after{content:"−"}
+@media (max-width:760px){
+  .ev{grid-template-columns:28px 1fr;gap:10px}
+  .ev-val{grid-column:2;justify-self:start;margin-top:2px;font-size:16px}
+}
 </style>
 
 <div class="wrap">
@@ -476,7 +515,7 @@ tr.quitada td.desc{text-decoration:line-through}
       <h3>Tudo que sai este mês</h3>
       <div class="sub" style="margin-top:-8px;margin-bottom:14px">Marque conforme for pagando. Fixos, parcelas, faturas e gastos avulsos, tudo num lugar só.</div>
       <div id="resumoPagar"></div>
-      <div class="scroll"><table class="tbl mob fluxo" id="fluxoTbl"></table></div>
+      <div id="fluxoTbl"></div>
     </div>
   </div>
 
@@ -1094,29 +1133,46 @@ const estaVazio=()=>!S.entradas.length&&!S.fixos.length&&!S.parcelas.length&&!S.
    no dia do vencimento. Débito, Pix e dinheiro caem no próprio dia. */
 function fluxoDoMes(ym){
   const ev=[];
-  entradasDoMes(ym).forEach(e=>ev.push({dia:e.dia||5,desc:e.nome,entra:e.valor,chave:`e:${e.id}:${ym}`}));
+  entradasDoMes(ym).forEach(e=>ev.push({dia:e.dia||5,desc:e.nome,entra:e.valor,
+    chave:`e:${e.id}:${ym}`, tipo:'entrada'}));
   S.fixos.filter(f=>mesDiff(ym,f.desde)>=0&&!ehCartao(f.pag))
-    .forEach(f=>ev.push({dia:f.dia||10,desc:f.nome,sai:f.valor,chave:`f:${f.id}:${ym}`,fixo:f}));
+    .forEach(f=>ev.push({dia:f.dia||10,desc:f.nome,sai:f.valor,chave:`f:${f.id}:${ym}`,fixo:f,
+      tipo:'fixo', cat:f.cat, sub:f.sub, quem:f.quem, pag:f.pag}));
   S.parcelas.forEach(p=>{
     const at=p.atual+mesDiff(ym,p.mesRef);
     if(at>=1&&at<=p.total&&!ehCartao(p.pag))
-      ev.push({dia:p.dia||10,desc:`${p.nome} (${at}/${p.total})`,sai:p.valor,chave:`p:${p.id}:${ym}`});
+      ev.push({dia:p.dia||10,desc:p.nome,sai:p.valor,chave:`p:${p.id}:${ym}`,
+        tipo:'parcela', parc:`${at}/${p.total}`, cat:p.cat, sub:p.sub, quem:p.quem, pag:p.pag});
   });
   S.lancamentos.filter(l=>l.data&&!ehCartao(l.pag)&&l.data.slice(0,7)===ym)
-    .forEach(l=>ev.push({dia:+l.data.slice(8,10),desc:l.desc,sai:l.valor,chave:`l:${l.id}`}));
+    .forEach(l=>ev.push({dia:+l.data.slice(8,10),desc:l.desc,sai:l.valor,chave:`l:${l.id}`,
+      tipo:'gasto', cat:l.cat, sub:l.sub, quem:l.quem, pag:l.pag, data:l.data}));
   S.cartoes.forEach(c=>{
-    let tot=0;
-    S.lancamentos.filter(l=>l.pag===c&&l.data&&mesCaixa(l.data,l.pag)===ym).forEach(l=>tot+=l.valor);
-    S.fixos.filter(f=>f.pag===c&&mesDiff(ym,f.desde)>=0).forEach(f=>tot+=f.valor);
+    let tot=0, itens=0;
+    S.lancamentos.filter(l=>l.pag===c&&l.data&&mesCaixa(l.data,l.pag)===ym).forEach(l=>{tot+=l.valor;itens++});
+    S.fixos.filter(f=>f.pag===c&&mesDiff(ym,f.desde)>=0).forEach(f=>{tot+=f.valor;itens++});
     S.parcelas.forEach(p=>{const at=p.atual+mesDiff(ym,p.mesRef);
-      if(p.pag===c&&at>=1&&at<=p.total) tot+=p.valor;});
-    if(tot>0.004) ev.push({dia:+ciclo(ym,c).venc.slice(8,10),desc:`Fatura ${c}`,sai:tot,fatura:true,chave:`fat:${c}:${ym}`});
+      if(p.pag===c&&at>=1&&at<=p.total){tot+=p.valor;itens++}});
+    if(tot>0.004) ev.push({dia:+ciclo(ym,c).venc.slice(8,10),desc:`Fatura ${c}`,sai:tot,
+      fatura:true,chave:`fat:${c}:${ym}`, tipo:'fatura', pag:c, itens});
   });
   return ev.sort((a,b)=>a.dia-b.dia||((b.entra||0)-(a.entra||0)));
 }
+/* Compra no débito, pix ou dinheiro já saiu da conta no dia. Não é
+   "conta a pagar" — conta como realizada sozinha, a menos que você
+   desmarque na mão ou que seja um gasto previsto para o futuro. */
+function quitaSozinho(ev,ym){
+  if(ev.tipo!=='gasto'||ev.prev) return false;
+  const hoje=(hojeYM()===ym)?new Date().getDate():diasNoMes(ym);
+  return ev.dia<=hoje;
+}
+function precisaAcao(ev,ym){ return !quitaSozinho(ev,ym); }
+
 function estaQuitado(ev,ym){
   if(ev.fixo) return !!(ev.fixo.pagos&&ev.fixo.pagos[ym]);
-  return !!(S.quitado&&S.quitado[ev.chave]);
+  const m=S.quitado&&S.quitado[ev.chave];
+  if(m!==undefined) return !!m;
+  return quitaSozinho(ev,ym);
 }
 function marcarQuitado(chave,ym,ligar){
   if(chave.startsWith('f:')){
@@ -1125,7 +1181,7 @@ function marcarQuitado(chave,ym,ligar){
     if(f){ f.pagos=f.pagos||{}; if(ligar)f.pagos[ym]=1; else delete f.pagos[ym]; }
   }
   S.quitado=S.quitado||{};
-  if(ligar) S.quitado[chave]=agora(); else delete S.quitado[chave];
+  S.quitado[chave]= ligar ? agora() : 0;   /* 0 = desmarcado de propósito */
 }
 
 /* O que deveria estar na conta agora, contando só o que você confirmou.
@@ -1433,38 +1489,43 @@ function renderFluxo(ym){
         <div class="leg"><i style="background:var(--rosa)"></i><span>linha do zero</span></div></div>`;
   }
 
-  /* tabela cronológica, com o que já foi pago marcado */
-  let run=ini;
-  const aPagar=ev.filter(e=>e.sai&&!estaQuitado(e,ym));
-  const faltam=aPagar.reduce((s,e)=>s+e.sai,0);
-  const pagos=ev.filter(e=>e.sai&&estaQuitado(e,ym)).length;
-  const totalSaidas=ev.filter(e=>e.sai).length;
+  /* ── a lista: primeiro o que precisa de ação, depois o que já saiu ── */
+  const acionaveis=ev.filter(e=>precisaAcao(e,ym));
+  const automaticos=ev.filter(e=>!precisaAcao(e,ym));
+  const pendentes=acionaveis.filter(e=>e.sai&&!estaQuitado(e,ym));
+  const faltam=pendentes.reduce((s,e)=>s+e.sai,0);
+  const saidasAcao=acionaveis.filter(e=>e.sai).length;
+  const pagasAcao=saidasAcao-pendentes.length;
 
-  document.getElementById('resumoPagar').innerHTML = totalSaidas
-    ? `<div class="pagar-barra"><div style="width:${totalSaidas?pagos/totalSaidas*100:0}%"></div></div>
-       <div class="pagar-txt"><b>${pagos} de ${totalSaidas}</b> contas pagas ·
+  document.getElementById('resumoPagar').innerHTML = saidasAcao
+    ? `<div class="pagar-barra"><div style="width:${saidasAcao?pagasAcao/saidasAcao*100:0}%"></div></div>
+       <div class="pagar-txt"><b>${pagasAcao} de ${saidasAcao}</b> contas pagas ·
        faltam <b class="${faltam?'neg':'pos'}">${brl(faltam)}</b></div>`
-    : '';
+    : `<div class="pagar-txt">Nenhuma conta pendente neste mês.</div>`;
 
-  document.getElementById('fluxoTbl').innerHTML=
-    `<thead><tr><th style="width:34px">Pago</th><th style="width:44px">Dia</th><th>O que</th>
-     <th style="text-align:right">Entra</th><th style="text-align:right">Sai</th>
-     <th style="text-align:right">Saldo</th></tr></thead><tbody>`
-    +`<tr><td></td><td></td><td class="mini">saldo inicial</td><td></td><td></td>
-       <td class="r ${ini>=0?'pos':'neg'}">${brl(ini)}</td></tr>`
-    +(ev.length?ev.map(e=>{
-      run+=(e.entra||0)-(e.sai||0);
-      const q=estaQuitado(e,ym);
-      return `<tr class="${q?'quitada':''}">
-        <td><input type="checkbox" class="chk" data-quit="${esc(e.chave)}" ${q?'checked':''}
-            aria-label="${e.entra?'Recebido':'Pago'}"></td>
-        <td><b>${e.dia}</b></td>
-        <td class="desc">${esc(e.desc)}${e.fatura?' <span class="pill">fatura</span>':''}</td>
-        <td class="r pos">${e.entra?brl(e.entra):''}</td>
-        <td class="r">${e.sai?brl(e.sai):''}</td>
-        <td class="r ${run>=0?'pos':'neg'}"><b>${brl(run)}</b></td></tr>`}).join('')
-      :`<tr><td colspan="6"><div class="empty">Nada se move neste mês ainda.</div></td></tr>`)
-    +`</tbody>`;
+  const linhaEv=e=>{
+    const q=estaQuitado(e,ym);
+    const marca=[e.pag, e.cat, e.data?dm(e.data):null].filter(Boolean)
+      .map(x=>`<span class="etq">${esc(x)}</span>`).join('');
+    return `<div class="ev ${q?'ok':''}">
+      <label class="ev-chk"><input type="checkbox" class="chk" data-quit="${esc(e.chave)}" ${q?'checked':''}
+        aria-label="${e.entra?'Recebido':'Pago'}"></label>
+      <div class="ev-txt">
+        <div class="ev-nome">${esc(e.desc)}${e.fatura?' <span class="pill">fatura</span>':''}${e.prev?' <span class="pill prev">previsto</span>':''}</div>
+        <div class="ev-marcas"><span class="etq dia">dia ${e.dia}</span>${marca}</div>
+      </div>
+      <div class="ev-val ${e.entra?'pos':''}">${e.entra?'+':'−'}${brl(e.entra||e.sai)}</div>
+    </div>`;
+  };
+
+  document.getElementById('fluxoTbl').innerHTML = ev.length
+    ? (acionaveis.length?acionaveis.map(linhaEv).join(''):'')
+      + (automaticos.length?`<details class="jasaiu"><summary>
+          ${automaticos.length} ${automaticos.length===1?'compra que já saiu da conta':'compras que já saíram da conta'}
+          · ${brl(automaticos.reduce((s,e)=>s+(e.sai||0),0))}</summary>
+          <div class="mini" style="margin:4px 0 10px">Débito, Pix e dinheiro saem no dia da compra — não têm o que pagar. Estão aqui só para conferência.</div>
+          ${automaticos.map(linhaEv).join('')}</details>`:'')
+    : `<div class="empty">Nada se move neste mês ainda.</div>`;
 }
 
 function renderPlano(ym){
@@ -2129,6 +2190,7 @@ document.body.addEventListener('click',e=>{
   if(d.delparc){S.parcelas=apagar(S.parcelas,d.delparc);render()}
   if(d.vermodo){modoCaixa=(d.vermodo==='caixa');syncVista();return}
   if(d.baixar){document.getElementById('backup').click();return}
+  if(d.veraba){aba=d.veraba;syncAba();return}
   if(d.fechafoco){foco=limpaFoco();render();return}
   if(d.novasub){const [campo,id]=d.novasub.split('|');criarSubPara(campo,id);return}
   if(d.pgedit!==undefined) renomearPag(+d.pgedit);
