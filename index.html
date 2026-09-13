@@ -64,9 +64,6 @@ h1,h2,h3,h4{font-family:"Fraunces","Georgia",serif;margin:0;letter-spacing:-.015
 .seg-prev{background:repeating-linear-gradient(135deg,#FFB4A8,#FFB4A8 5px,#FFD5CD 5px,#FFD5CD 10px)}
 .seg-sobra{background:repeating-linear-gradient(135deg,#FFDCEB,#FFDCEB 6px,#FFEDF4 6px,#FFEDF4 12px);border-radius:0 12px 12px 0}
 .seg-over{background:repeating-linear-gradient(135deg,var(--rosa),var(--rosa) 7px,#C42A64 7px,#C42A64 14px);border-radius:0 12px 12px 0;box-shadow:0 0 0 3px #fff}
-.limite{position:absolute;top:-8px;bottom:-8px;width:2px;background:var(--ink);border-radius:2px}
-.limite::after{content:attr(data-lbl);position:absolute;top:-18px;left:50%;transform:translateX(-50%);
-  font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
 .legenda{display:flex;gap:18px;flex-wrap:wrap;margin-top:16px}
 .leg{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink2)}
 .leg i{width:10px;height:10px;border-radius:4px;display:block;flex:none}
@@ -423,6 +420,75 @@ tr.quitada td.desc{text-decoration:line-through}
   .ev{grid-template-columns:28px 1fr;gap:10px}
   .ev-val{grid-column:2;justify-self:start;margin-top:2px;font-size:16px}
 }
+/* carrossel de limites */
+.lim-topo{margin:14px 0 0}
+.lim-cab{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px;padding:0 2px}
+.lim-ref{font-size:11.5px;color:var(--ink3);font-family:"DM Mono",monospace}
+.lim-trilho{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px 0 6px}
+.lim-trilho::-webkit-scrollbar{display:none}
+.lim-card{flex:0 0 100%;scroll-snap-align:start;background:var(--card);
+  border-radius:var(--r);box-shadow:var(--shadow);padding:18px 20px;cursor:pointer;
+  border-top:3px solid transparent;transition:transform .18s}
+.lim-card:active{transform:scale(.985)}
+.lim-card.ok{border-top-color:var(--menta)}
+.lim-card.adiantado{border-top-color:var(--orquidea)}
+.lim-card.atencao{border-top-color:var(--coral)}
+.lim-card.estourou{border-top-color:var(--rosa);background:#FFF8FB}
+.lim-nome{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--ink)}
+.lim-nome i{width:9px;height:9px;border-radius:3px;flex:none}
+.lim-num{font-family:"DM Mono",monospace;font-size:26px;font-weight:500;letter-spacing:-.04em;margin-top:10px;line-height:1}
+.lim-de{font-size:12px;color:var(--ink3);margin-top:4px}
+.lim-barra{position:relative;height:9px;background:var(--line2);border-radius:5px;margin-top:14px;overflow:visible}
+.lim-fill{height:9px;border-radius:5px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.lim-tick{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);border-radius:2px;opacity:.55}
+.lim-pe{display:flex;justify-content:space-between;align-items:center;margin-top:11px}
+.lim-selo{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:#fff;border-radius:20px;padding:4px 10px}
+.lim-pct{font-family:"DM Mono",monospace;font-size:13px;font-weight:500;color:var(--ink2)}
+.lim-recado{font-size:12.5px;color:var(--ink2);margin-top:10px;line-height:1.45}
+.lim-recado b{color:var(--ink);font-weight:600}
+.lim-pontos{display:flex;gap:6px;justify-content:center;margin-top:10px}
+.lim-pontos span{width:6px;height:6px;border-radius:50%;background:var(--areia);transition:background .25s,width .25s}
+.lim-pontos span.on{width:18px;border-radius:3px;background:var(--rosa)}
+@media (min-width:760px){ .lim-card{flex:0 0 300px} .lim-pontos{display:none} }
+.ciclo-ref{display:block;margin-bottom:18px;padding-bottom:16px;border-bottom:1px dashed var(--line)}
+.ciclo-ref .eyebrow{display:block;margin-bottom:7px}
+.ciclo-ref select{width:100%;max-width:320px}
+.ciclo-ref .mini{display:block;margin-top:7px;line-height:1.5}
+.lim-regua{font-size:10.5px;color:var(--ink3);margin-top:9px;padding-top:8px;border-top:1px solid var(--line2);font-family:"DM Mono",monospace}
+.lim-sel{display:flex;align-items:center;gap:9px;margin-top:9px;flex-wrap:wrap}
+.lim-sel select{max-width:200px}
+.lim-proj{position:absolute;right:-1px;top:-4px;bottom:-4px;width:2px;
+  background:repeating-linear-gradient(to bottom,var(--rosa),var(--rosa) 3px,transparent 3px,transparent 6px)}
+.lim-card.estourou{box-shadow:0 1px 2px rgba(228,69,124,.16), 0 10px 30px -12px rgba(228,69,124,.55)}
+.lim-card.estourou .lim-num{color:var(--rosa)}
+.tom-sel{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.tom-sel button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 15px;
+  font:inherit;font-size:12.5px;cursor:pointer;color:var(--ink2)}
+.tom-sel button[aria-pressed="true"]{background:var(--vinho,#3D2233);color:#fff;border-color:transparent;font-weight:600}
+/* tira compacta dentro da régua */
+.tira{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;
+  padding-top:15px;border-top:1px solid var(--line)}
+.tira-item{display:flex;flex-direction:column;gap:3px;min-width:0}
+.tira-rot{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+.tira-item b{font-family:"DM Mono",monospace;font-size:17px;font-weight:500;letter-spacing:-.04em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tira-obs{font-size:10.5px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:760px){
+  .regua{padding:17px 15px 15px}
+  .regua-verdict{font-size:17px}
+  .track,.seg{height:32px}
+  .seg:first-child{border-radius:10px 0 0 10px}
+  .legenda{gap:10px 14px;margin-top:12px}
+  .leg{font-size:11px}
+  /* no celular: entrou e saiu lado a lado, saldo embaixo com espaço */
+  .tira{grid-template-columns:1fr 1fr;gap:12px 14px;margin-top:13px;padding-top:12px}
+  .tira-item b{font-size:16px}
+  .tira-obs{font-size:10.5px}
+  .tira-item.saldo{grid-column:1/3;padding-top:11px;border-top:1px solid var(--line2)}
+  .tira-item.saldo b{font-size:21px}
+}
 </style>
 
 <div class="wrap">
@@ -436,13 +502,6 @@ tr.quitada td.desc{text-decoration:line-through}
         <span id="tagPrev"></span>
       </div>
     </div>
-    <div>
-      <div class="eyebrow" style="margin-bottom:6px;text-align:right">Contar o gasto</div>
-      <div class="toggle" role="group" aria-label="Regime de contagem">
-        <button id="mCaixa" aria-pressed="true">Quando pago</button>
-        <button id="mCompra" aria-pressed="false">Quando gastei</button>
-      </div>
-    </div>
   </div>
 
   <section class="regua">
@@ -451,20 +510,14 @@ tr.quitada td.desc{text-decoration:line-through}
         <div class="eyebrow" style="margin-bottom:6px">A régua do mês</div>
         <div class="regua-verdict" id="verdict">—</div>
       </div>
-      <div style="text-align:right">
-        <div class="eyebrow" style="margin-bottom:4px">Entrou</div>
-        <div class="num" style="font-size:20px;font-weight:500" id="entradaTop">—</div>
-      </div>
+
     </div>
     <div class="track" id="track"></div>
     <div class="legenda" id="legenda"></div>
+    <div class="tira" id="tira"></div>
   </section>
 
-  <div class="grid g3">
-    <div class="card"><h3>Entradas</h3><div class="big pos" id="cEntrada">—</div><div class="sub" id="cEntradaSub"></div></div>
-    <div class="card"><h3>Saídas</h3><div class="big" id="cSaida">—</div><div class="sub" id="cSaidaSub"></div></div>
-    <div class="card"><h3>Saldo</h3><div class="big" id="cSaldo">—</div><div class="sub" id="cSaldoSub"></div></div>
-  </div>
+  <div id="limitesTopo"></div>
 
   <div class="tabs" role="tablist">
     <button role="tab" data-v="geral" aria-selected="true">Visão geral</button>
@@ -607,7 +660,21 @@ tr.quitada td.desc{text-decoration:line-through}
 
     <div class="card">
       <h3>Limites de gasto <button class="btn ghost sm" id="addLim">+ Novo</button></h3>
-      <div class="sub" style="margin-top:-8px;margin-bottom:12px">Um teto por mês. Pode ser por categoria, por pessoa, ou pelos dois juntos — tipo "Alimentação da Laura". Ao passar de 70%, aparece aviso na Visão geral.</div>
+      <div class="sub" style="margin-top:-8px;margin-bottom:14px">Um teto por mês. Pode ser por categoria, por pessoa, ou pelos dois juntos — tipo "Alimentação da Laura". Os cartões no topo do painel avisam quando você está gastando rápido demais.</div>
+      <div class="ciclo-ref">
+        <span class="eyebrow">Tom dos avisos</span>
+        <div class="tom-sel" role="group" aria-label="Tom dos avisos">
+          <button data-tom="gentil">Gentil</button>
+          <button data-tom="direto">Direto</button>
+          <button data-tom="duro">Sem paciência</button>
+        </div>
+        <span class="mini" style="display:block;margin-top:7px">Muda só as palavras dos cartões de limite. Os números são os mesmos.</span>
+      </div>
+      <label class="ciclo-ref">
+        <span class="eyebrow">Contar o ritmo pelo</span>
+        <select id="selCiclo"></select>
+        <span class="mini">Serve de régua para saber se você está adiantada nos gastos. Se sua vida financeira gira em torno da fatura de um cartão, escolha ele.</span>
+      </label>
       <div id="listaLim"></div>
     </div>
 
@@ -965,6 +1032,8 @@ function migrar(){
   if(!S.quitado)S.quitado={};
   if(!S.confere)S.confere={};
   if(!S.limites)S.limites=[];
+  if(S.cicloRef===undefined)S.cicloRef=null;   /* null = mês do calendário */
+  if(!S.tomAlerta)S.tomAlerta='direto';        /* gentil | direto | duro */
   /* limite no formato antigo {tipo,alvo} vira {cat,quem} */
   S.limites=S.limites.map(l=>l&&l.tipo
     ? {cat:l.tipo==='cat'?l.alvo:null, quem:l.tipo==='quem'?l.alvo:null, valor:l.valor}
@@ -1234,7 +1303,7 @@ function render(){
   document.getElementById('mesnome').innerHTML=MESES[+ym.split('-')[1]-1]+' <span>'+ym.split('-')[0].slice(2)+'</span>';
   document.getElementById('tagPrev').innerHTML=futuro(ym)?'<span class="tag-prev">previsto</span>':'';
   document.getElementById('prev').disabled = mesDiff(ym,mesMinimo())<=0;
-  renderRegua(R);renderCards(R);
+  renderRegua(R);renderCards(R);renderCarrossel(R);ligarPontos();
   if(aba==='geral')renderGeral(R,ym);
   if(aba==='fluxo')renderFluxo(ym);
   if(aba==='plano')renderPlano(ym);
@@ -1256,8 +1325,7 @@ function renderRegua(R){
     `<div class="seg seg-var" style="width:${pct(R.variReal)}%" title="Variável realizado ${brl(R.variReal)}"></div>`+
     `<div class="seg seg-prev" style="width:${pct(R.variPrev)}%" title="Variável previsto ${brl(R.variPrev)}"></div>`+
     (sobra>0?`<div class="seg seg-sobra" style="width:${pct(sobra)}%"></div>`:'')+
-    (over>0?`<div class="seg seg-over" style="width:${pct(over)}%"></div>`:'')+
-    (over>0?`<div class="limite" data-lbl="o que entra" style="left:${pct(R.entrada)}%"></div>`:'');
+    (over>0?`<div class="seg seg-over" style="width:${pct(over)}%"></div>`:'');
   const livre=R.entrada-(R.fixo+R.parc);
   const v=document.getElementById('verdict');
   if(R.entrada===0&&R.saida===0) v.innerHTML='Mês em branco. Comece pelas entradas e pelos fixos.';
@@ -1265,7 +1333,6 @@ function renderRegua(R){
   else v.innerHTML=livre>0
     ?`Depois de fixos e parcelas, sobram <em>${brl(livre)}</em> pra você mexer.`
     :`Fixos e parcelas já consomem tudo que entra — e passam <em>${brl(-livre)}</em>.`;
-  document.getElementById('entradaTop').textContent=brl(R.entrada);
   const leg=[['var(--ameixa)','Fixos',R.fixo],['var(--orquidea)','Parcelas',R.parc]];
   if(R.variReal)leg.push(['var(--coral)','Variável',R.variReal]);
   if(R.variPrev)leg.push(['#FFC4B8','Variável previsto',R.variPrev]);
@@ -1276,40 +1343,23 @@ function renderRegua(R){
 }
 
 function renderCards(R){
-  document.getElementById('cEntrada').textContent=brl(R.entrada);
-  document.getElementById('cEntradaSub').textContent=R.ent.length?R.ent.length+(R.ent.length===1?' fonte':' fontes'):'nada lançado';
-  document.getElementById('cSaida').textContent=brl(R.saida);
-  document.getElementById('cSaidaSub').textContent=R.saida
-    ?`${brlc(R.fixo)} fixo · ${brlc(R.parc)} parcelas · ${brlc(R.vari)} variável`:'nada lançado';
-  const s=document.getElementById('cSaldo');
-  s.textContent=brl(R.saldo);s.className='big '+(R.saldo>=0?'pos':'neg');
-  document.getElementById('cSaldoSub').textContent=R.entrada
-    ?(R.saldo>=0?`sobra ${(R.saldo/R.entrada*100).toFixed(0)}% do que entra`
-                :`gasta ${(R.saida/R.entrada*100).toFixed(0)}% do que entra`):'';
-}
-
-/* --- setup inicial --- */
-function renderSetup(){
-  const box=document.getElementById('setupBox'), geral=document.getElementById('geralBox');
-  if(!estaVazio()){ box.innerHTML=''; geral.style.display=''; return; }
-  geral.style.display='none';
-  const p=[
-    {n:1,t:'Quanto entra',d:'Salário, freela, extras. Marque o salário como "repete todo mês" e ele já preenche outubro, novembro e dezembro sozinho.',b:'addEntrada2',ok:S.entradas.length},
-    {n:2,t:'Seus fixos',d:'Casa, luz, água, internet, guarda da rua, Fies, seguro. Lançados uma vez, aparecem em todos os meses daqui pra frente.',b:'addFixo2',ok:S.fixos.length},
-    {n:3,t:'Parcelamentos em andamento',d:'Diga em qual parcela cada um está (4 de 5, 7 de 11) e eles avançam sozinhos — e somem quando terminam.',b:'addParc2',ok:S.parcelas.length}
-  ];
-  box.innerHTML=`<div class="card setup">
-    <h3>Vamos montar ${mesLabel(S.mes)}</h3>
-    <p style="font-size:13px;color:var(--ink2);margin:-6px 0 18px;max-width:640px">
-      Preencha os três blocos abaixo uma única vez. Depois é só lançar o variável do dia a dia — e outubro a dezembro já vão nascer preenchidos com o que está comprometido.</p>
-    <div class="passos">${p.map(x=>`
-      <div class="passo ${x.ok?'ok':''}">
-        <div class="passo-n">${x.ok?'✓':x.n}</div>
-        <h4>${x.t}</h4><p>${x.d}</p>
-        ${x.ok?`<span class="feito">${x.ok} ${x.ok===1?'item':'itens'}</span>`
-              :`<button class="btn sm" data-abrir="${x.b}">Adicionar</button>`}
-      </div>`).join('')}</div>
-  </div>`;
+  const pct=R.entrada?Math.round(R.saldo/R.entrada*100):0;
+  document.getElementById('tira').innerHTML=`
+    <div class="tira-item">
+      <span class="tira-rot">Entrou</span>
+      <b class="pos">${brl(R.entrada)}</b>
+      <span class="tira-obs">${R.ent.length?`${R.ent.length} ${R.ent.length===1?'fonte':'fontes'}`:'nada lançado'}</span>
+    </div>
+    <div class="tira-item">
+      <span class="tira-rot">Saiu</span>
+      <b>${brl(R.saida)}</b>
+      <span class="tira-obs">${R.it.length?`${R.it.length} ${R.it.length===1?'item':'itens'}`:'nada lançado'}</span>
+    </div>
+    <div class="tira-item saldo">
+      <span class="tira-rot">Saldo</span>
+      <b class="${R.saldo>=0?'pos':'neg'}">${brl(R.saldo)}</b>
+      <span class="tira-obs">${R.entrada?(R.saldo>=0?`sobra ${pct}% do que entra`:`gasta ${Math.round(R.saida/R.entrada*100)}% do que entra`):''}</span>
+    </div>`;
 }
 
 function rosca(pares,total,cor,rotulo){
@@ -1602,18 +1652,18 @@ function renderGeral(R,ym){
   const gCompra=S.lancamentos.filter(l=>mesCompra(l)===ym).reduce((s,l)=>s+l.valor,0);
   const gCaixa=S.lancamentos.filter(l=>l.data&&mesCaixa(l.data,l.pag)===ym).reduce((s,l)=>s+l.valor,0);
   if(!modoCaixa&&Math.abs(gCompra-gCaixa)>0.005){
-    al.push({t:'aviso-caixa',h:`Você <b>gastou ${brl(gCompra)}</b> em ${mesLabel(ym)}, mas o que <b>sai da conta</b> neste mês é ${brl(gCaixa)} — a diferença são compras no cartão que caem em faturas de outros meses. <button class="lnk" data-vermodo="caixa">ver por quando eu pago</button>`});
+    al.push({t:'aviso-caixa',h:`Você <b>gastou ${brl(gCompra)}</b> em ${mesLabel(ym)}, mas o que <b>sai da conta</b> neste mês é ${brl(gCaixa)} — a diferença são compras no cartão que caem em faturas de outros meses.`});
   }
   if(modoCaixa){
     const vindas=S.lancamentos.filter(l=>l.data&&mesCaixa(l.data,l.pag)===ym&&mesCompra(l)!==ym);
     const soma=vindas.reduce((s,l)=>s+l.valor,0);
     if(vindas.length) al.push({t:'aviso-caixa',
-      h:`${vindas.length} ${vindas.length===1?'compra de mês anterior cai':'compras de meses anteriores caem'} aqui — ${brl(soma)} — porque ${vindas.length===1?'entrou numa fatura paga':'entraram em faturas pagas'} neste mês. <button class="lnk" data-vermodo="compra">ver por quando eu gastei</button>`});
+      h:`${vindas.length} ${vindas.length===1?'compra de mês anterior cai':'compras de meses anteriores caem'} aqui — ${brl(soma)} — porque ${vindas.length===1?'entrou numa fatura paga':'entraram em faturas pagas'} neste mês.`});
   }
   statusLimites(R).filter(x=>x.pct>=70).forEach(x=>{
     al.push({t:x.pct>=100?'alerta':'', h:
-      `<b>${esc(x.rotulo)}: ${brl(x.usados)} de ${brl(x.valor)}</b> — ${x.pct.toFixed(0)}% do que você definiu.
-       ${x.pct>=100?`Passou <b>${brl(x.usados-x.valor)}</b>.`:`Faltam ${brl(x.valor-x.usados)} para o teto.`}
+      `<b>${esc(x.rotulo)}: ${brl(x.usados)} de ${brl(x.valor)}</b> — ${x.pct.toFixed(0)}%.
+       ${recadoLimite(x)}
        <button class="lnk" data-limite="${esc(x.cat||'')}|${esc(x.quem||'')}">ver os gastos</button>`});
   });
   const semRegra=R.it.filter(i=>i.cat==='Outros');
@@ -1750,17 +1800,228 @@ function agruparSub(it){
 }
 
 /* Quanto já foi gasto contra cada teto definido */
+/* Quanto do ciclo já passou, de 0 a 1. A régua pode ser o mês do
+   calendário ou a janela de um cartão que você escolhe em Ajustes. */
+function progressoCiclo(ym,refPedida){
+  const hojeIso=new Date().toISOString().slice(0,10);
+  const ref=(refPedida===undefined||refPedida===null)?S.cicloRef
+           :(refPedida==='cal'?null:refPedida);
+  if(ref&&ehCartao(ref)){
+    const cl=ciclo(ym,ref);
+    if(hojeIso<cl.de) return 0;
+    if(hojeIso>cl.ate) return 1;
+    const d0=new Date(cl.de), d1=new Date(cl.ate), dh=new Date(hojeIso);
+    const total=(d1-d0)||1;
+    return Math.min(1,Math.max(0,(dh-d0)/total));
+  }
+  if(hojeYM()!==ym) return mesDiff(ym,hojeYM())<0 ? 1 : 0;
+  return new Date().getDate()/diasNoMes(ym);
+}
+/* Quantos dias ainda faltam na régua escolhida */
+function diasRestantes(ym,refPedida){
+  const ref=(refPedida===undefined||refPedida===null)?S.cicloRef
+           :(refPedida==='cal'?null:refPedida);
+  const hoje=new Date();
+  if(ref&&ehCartao(ref)){
+    const cl=ciclo(ym,ref);
+    const d=Math.ceil((new Date(cl.ate)-hoje)/864e5);
+    return Math.max(0,d);
+  }
+  if(hojeYM()!==ym) return mesDiff(ym,hojeYM())<0?0:diasNoMes(ym);
+  return Math.max(0,diasNoMes(ym)-hoje.getDate());
+}
+function rotuloCiclo(refPedida){
+  const ref=(refPedida===undefined||refPedida===null)?S.cicloRef
+           :(refPedida==='cal'?null:refPedida);
+  return (ref&&ehCartao(ref)) ? `ciclo do ${ref}` : 'mês do calendário';
+}
+/* A janela do ciclo em datas, pra projetar ritmo e contar dias restantes */
+function janelaCiclo(ym,refPedida){
+  const ref=(refPedida===undefined||refPedida===null)?S.cicloRef
+           :(refPedida==='cal'?null:refPedida);
+  if(ref&&ehCartao(ref)){ const c=ciclo(ym,ref); return {de:c.de, ate:c.ate}; }
+  return {de:`${ym}-01`, ate:`${ym}-${String(diasNoMes(ym)).padStart(2,'0')}`};
+}
+const diasEntre=(a,b)=>Math.round((new Date(b)-new Date(a))/864e5);
+
+/* No ritmo de hoje, quanto você fecha o ciclo e quando estoura o teto */
+function projecao(x,ym){
+  const j=janelaCiclo(ym,x.ciclo);
+  const hojeIso=new Date().toISOString().slice(0,10);
+  const total=Math.max(1,diasEntre(j.de,j.ate));
+  const faltamDias=Math.max(0,diasEntre(hojeIso>j.de?hojeIso:j.de, j.ate));
+  if(x.prog<=0.05) return {faltamDias, total};
+  const ritmo=x.usados/x.prog;                 /* projeção do ciclo inteiro */
+  const progAlvo=x.valor/ritmo;                /* em que ponto do ciclo estoura */
+  let dataEstouro=null;
+  if(progAlvo<=1){
+    const d=new Date(j.de); d.setDate(d.getDate()+Math.round(progAlvo*total));
+    dataEstouro=d.toISOString().slice(0,10);
+  }
+  return {faltamDias, total, ritmo, dataEstouro, excesso:ritmo-x.valor};
+}
+
+/* Combina quanto foi gasto com quanto do ciclo já passou.
+   Gastar metade da verba no começo do mês acende antes. */
+function estadoLimite(pct,prog){
+  if(pct>=100) return 'estourou';
+  if(pct>=70)  return 'atencao';
+  if(pct>=50&&pct>prog*100) return 'adiantado';
+  return 'ok';
+}
+const FALA={
+  gentil:{ ok:'no ritmo', adiantado:'tá quase lá', atencao:'atenção',        estourou:'passou do teto' },
+  direto:{ ok:'no ritmo', adiantado:'indo rápido', atencao:'perto do limite', estourou:'estourou' },
+  duro:  { ok:'no ritmo', adiantado:'acelerada',   atencao:'quase lá',        estourou:'estourou' }
+};
+const CORES={ok:'var(--menta)',adiantado:'var(--orquidea)',atencao:'var(--coral)',estourou:'var(--rosa)'};
+
+/* O recado de cada cartão. A força vem de consequência calculada —
+   número que a pessoa não consegue rebater —, não de julgamento. */
+function recadoLimite(x){
+  const tom=S.tomAlerta||'direto';
+  const falta=x.valor-x.usados, acima=-falta, d=x.faltamDias;
+  const dias=d===1?'1 dia':`${d} dias`;
+  const proj=x.projetado, vaiEstourar=proj&&proj>x.valor*1.02;
+  const porDia=brl(Math.max(0,falta)/Math.max(d,1));
+
+  if(x.estado==='estourou'){
+    const base=`<b>${brl(acima)} acima do teto.</b>`;
+    if(tom==='gentil') return `${base} ${d?`Ainda faltam ${dias} de ciclo.`:'O ciclo fechou assim.'}`;
+    if(tom==='direto') return d
+      ? `${base} Faltam ${dias}, e cada gasto novo aqui sai de outro lugar do seu mês.`
+      : `${base} O ciclo fechou assim.`;
+    return d ? `${base} E ainda faltam ${dias}. Esse dinheiro não volta.`
+             : `${base} Fechou o ciclo estourado.`;
+  }
+  if(x.estado==='atencao'){
+    if(vaiEstourar){
+      const base=`Nesse ritmo você fecha em <b>${brl(proj)}</b> — ${brl(proj-x.valor)} acima do teto.`;
+      if(tom==='gentil') return `${base} Dá tempo de segurar.`;
+      if(tom==='direto') return `${base} Sobram ${brl(falta)} para ${dias}.`;
+      return `${base} Ou segura agora, ou estoura.`;
+    }
+    const base=`Sobram <b>${brl(falta)}</b> para ${dias}.`;
+    if(tom==='gentil') return `${base} Está apertado, mas cabe.`;
+    if(tom==='direto') return `${base} Dá ${porDia} por dia até fechar.`;
+    return `${base} Isso é ${porDia} por dia. Nem um a mais.`;
+  }
+  if(x.estado==='adiantado'){
+    const base=`Já usou ${x.pct.toFixed(0)}% com ${Math.round(x.prog*100)}% do ciclo.`;
+    if(!vaiEstourar) return `${base} <b>Tá indo rápido.</b>`;
+    if(tom==='gentil') return `${base} Mantendo o ritmo, fecha em ${brl(proj)}.`;
+    if(tom==='direto') return `${base} Nesse ritmo fecha em <b>${brl(proj)}</b>, acima do teto.`;
+    return `${base} Nesse ritmo estoura antes do fim: <b>${brl(proj)}</b>.`;
+  }
+  return `Sobram <b>${brl(falta)}</b> e o ritmo está certo.`;
+}
+const ORDEM={estourou:0, atencao:1, adiantado:2, ok:3};
+
 const rotuloLimite=l=>[l.cat,l.quem].filter(Boolean).join(' · ');
 function statusLimites(R){
   return (S.limites||[]).map(l=>{
     const usados=R.it.filter(i=>(!l.cat||i.cat===l.cat)&&(!l.quem||i.quem===l.quem))
                       .reduce((s,i)=>s+i.valor,0);
     const pct=l.valor?usados/l.valor*100:0;
-    return {...l, usados, pct, rotulo:rotuloLimite(l),
+    const prog=progressoCiclo(S.mes,l.ciclo);
+    const estado=estadoLimite(pct,prog);
+    const faltamDias=diasRestantes(S.mes,l.ciclo);
+    /* se mantiver o ritmo, onde isso termina */
+    const projetado=prog>0.08 ? usados/prog : null;
+    return {...l, usados, pct, prog, estado, faltamDias, projetado, rotulo:rotuloLimite(l),
+            rotCiclo:rotuloCiclo(l.ciclo),
             cor: l.cat?catCor(l.cat):quemCor(l.quem)};
-  }).sort((a,b)=>b.pct-a.pct);
+  }).sort((a,b)=>(ORDEM[a.estado]-ORDEM[b.estado])||(b.pct-a.pct));
 }
+function renderCarrossel(R){
+  const box=document.getElementById('limitesTopo');
+  const st=statusLimites(R);
+  if(!st.length){ box.innerHTML=''; return; }
+  box.innerHTML=`
+    <div class="lim-topo">
+      <div class="lim-cab"><span class="eyebrow">Seus limites</span></div>
+      <div class="lim-trilho">${st.map(x=>{
+        const tom=S.tomAlerta||'direto';
+        const f={rot:FALA[tom][x.estado], cor:CORES[x.estado]};
+        const falta=x.valor-x.usados;
+        const pj=projecao(x,S.mes);
+        const dias=pj.faltamDias;
+        const porDia=dias>0?falta/dias:falta;
+        let recado;
+        if(x.estado==='estourou'){
+          const quanto=`<b>${brl(-falta)} acima do teto.</b>`;
+          recado = dias>0
+            ? (tom==='gentil'
+                ? `${quanto} Ainda ${dias===1?'falta 1 dia':`faltam ${dias} dias`} de ciclo.`
+              : tom==='duro'
+                ? `${quanto} E ainda ${dias===1?'falta 1 dia':`faltam ${dias} dias`}. Esse dinheiro não volta.`
+                : `${quanto} Faltam ${dias===1?'1 dia':`${dias} dias`}, e tudo que entrar aqui sai de outro lugar do seu mês.`)
+            : `Fechou <b>${brl(-falta)}</b> acima do teto.`;
+        }else if(pj.ritmo&&pj.excesso>0){
+          recado = `Neste ritmo você fecha o ciclo em <b>${brl(pj.ritmo)}</b> — <b>${brl(pj.excesso)} acima</b> do teto.`
+            + (pj.dataEstouro?` O limite acaba em <b>${dm(pj.dataEstouro)}</b>.`:'')
+            + (tom==='duro'?' Ou segura agora, ou estoura.':tom==='gentil'?' Dá tempo de segurar.':'');
+        }else if(x.estado==='atencao'){
+          recado = dias>0
+            ? `Restam <b>${brl(falta)}</b> para ${dias===1?'1 dia':`${dias} dias`} — <b>${brl(porDia)} por dia</b>`
+              + (tom==='gentil'?'. Está apertado, mas cabe.':tom==='duro'?'. Nem um a mais.':', e nada a mais.')
+            : `Fechou o ciclo usando ${x.pct.toFixed(0)}% do teto.`;
+        }else if(x.estado==='adiantado'){
+          recado = `${x.pct.toFixed(0)}% do teto com ${Math.round(x.prog*100)}% do ciclo. `
+            + (dias>0?`Sobram <b>${brl(porDia)} por dia</b> pelos próximos ${dias} dias.`:'');
+        }else{
+          recado = dias>0
+            ? `Sobram <b>${brl(falta)}</b> para ${dias} dias. No ritmo certo.`
+            : `Fechou dentro do teto, com ${brl(falta)} de sobra.`;
+        }
+        return `<div class="lim-card ${x.estado}" data-limite="${esc(x.cat||'')}|${esc(x.quem||'')}">
+          <div class="lim-nome"><i style="background:${x.cor}"></i>${esc(x.rotulo)}</div>
+          <div class="lim-num">${brl(x.usados)}</div>
+          <div class="lim-de">de ${brl(x.valor)}</div>
+          <div class="lim-barra">
+            <div class="lim-fill" style="width:${Math.min(100,x.pct)}%;background:${f.cor}"></div>
+            <div class="lim-tick" style="left:${Math.min(100,x.prog*100)}%"
+              title="onde você deveria estar"></div>
+            ${x.projetado&&x.projetado>x.valor*1.02&&x.pct<100
+              ? '<div class="lim-proj" title="onde você termina nesse ritmo"></div>':''}
+          </div>
+          <div class="lim-pe">
+            <span class="lim-selo" style="background:${f.cor}">${f.rot}</span>
+            <span class="lim-pct">${x.pct.toFixed(0)}%</span>
+          </div>
+          <div class="lim-recado">${recado}</div>
+          <div class="lim-regua">régua: ${esc(x.rotCiclo)} · ${Math.round(x.prog*100)}% corrido</div>
+        </div>`;
+      }).join('')}</div>
+      ${st.length>1?`<div class="lim-pontos" id="limPontos">${
+        st.map((_,i)=>`<span class="${i?'':'on'}"></span>`).join('')}</div>`:''}
+    </div>`;
+}
+
+function ligarPontos(){
+  const t=document.querySelector('.lim-trilho'), p=document.getElementById('limPontos');
+  if(!t||!p||t.dataset.ligado) return;
+  t.dataset.ligado='1';
+  t.addEventListener('scroll',()=>{
+    const i=Math.round(t.scrollLeft/(t.clientWidth+14));
+    [...p.children].forEach((b,n)=>b.classList.toggle('on',n===i));
+  },{passive:true});
+}
+
 function renderLimites(R){
+  const sel=document.getElementById('selCiclo');
+  if(sel){
+    const chave=['cal',...S.cartoes].join('|');
+    if(sel.dataset.lista!==chave){
+      sel.innerHTML='';
+      sel.add(new Option('Mês do calendário','cal'));
+      S.cartoes.forEach(c=>sel.add(new Option(`Ciclo do ${c}`,c)));
+      sel.dataset.lista=chave;
+    }
+    sel.value=(S.cicloRef&&S.cartoes.includes(S.cicloRef))?S.cicloRef:'cal';
+  }
+  document.querySelectorAll('.tom-sel button').forEach(b=>
+    b.setAttribute('aria-pressed', String((S.tomAlerta||'direto')===b.dataset.tom)));
   const box=document.getElementById('listaLim');
   if(!box) return;
   const st=statusLimites(R);
@@ -1782,7 +2043,13 @@ function renderLimites(R){
       <div class="prog" style="margin-top:7px"><i style="width:${Math.min(100,x.pct)}%;
         background:${x.pct>=100?'var(--rosa)':x.pct>=70?'var(--pessego)':'var(--menta)'}"></i></div>
       <div class="mini" style="margin-top:5px">${x.pct.toFixed(0)}% do teto${
-        x.pct>=100?' — passou':x.pct>=70?' — atenção':''}</div>
+        x.pct>=100?' — passou':x.pct>=70?' — atenção':''} · régua: ${esc(x.rotCiclo)}</div>
+      <label class="lim-sel"><span class="mini">Contar o ritmo pelo</span>
+        <select class="selq" data-limciclo="${i}">
+          <option value="padrao"${!x.ciclo?' selected':''}>Padrão dos Ajustes</option>
+          <option value="cal"${x.ciclo==='cal'?' selected':''}>Mês do calendário</option>
+          ${S.cartoes.map(c=>`<option value="${esc(c)}"${x.ciclo===c?' selected':''}>Ciclo do ${esc(c)}</option>`).join('')}
+        </select></label>
     </div>`).join('');
 }
 
@@ -2096,15 +2363,8 @@ document.body.addEventListener('click',e=>{
   if(lp){ const q=lp.dataset.limpa;
     if(q==='tudo') foco=limpaFoco(); else {foco[q]=null; if(q==='cat')foco.sub=null}
     render(); return; }
-  const b=e.target.closest('#mCompra,#mCaixa'); if(!b) return;
-  modoCaixa=(b.id==='mCaixa');
-  syncVista();
 });
-function syncVista(){
-  document.getElementById('mCompra').setAttribute('aria-pressed',!modoCaixa);
-  document.getElementById('mCaixa').setAttribute('aria-pressed',modoCaixa);
-  render();
-}
+function syncVista(){ render(); }
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{aba=b.dataset.v;syncAba()});
 function syncAba(){
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===aba));
@@ -2143,6 +2403,16 @@ document.getElementById('qAdd').onclick=lancarRapido;
 const acha=(arr,id)=>arr.find(x=>x.id===id);
 document.body.addEventListener('change',e=>{
   const t=e.target,d=t.dataset;
+  if(t.id==='selCiclo'){
+    S.cicloRef=(t.value==='cal')?null:t.value; render();
+    toast(`Padrão: ${t.value==='cal'?'mês do calendário':'ciclo do '+t.value}.`); return;
+  }
+  if(d.limciclo!==undefined){
+    const l=S.limites[+d.limciclo];
+    if(l){ l.ciclo=(t.value==='padrao')?null:t.value; render();
+      toast(`Ritmo deste limite: ${t.value==='padrao'?'igual ao padrão':t.value==='cal'?'mês do calendário':'ciclo do '+t.value}.`); }
+    return;
+  }
   if(d.c){const l=acha(S.lancamentos,d.c);if(l){l.cat=t.value;tocar(l);
     if(l.sub&&!subsDe(l.cat).includes(l.sub))l.sub=undefined;
     const k=salvarRegra(l.desc,l.cat,l.quem);if(k)toast(`Guardei: "${k}" → ${l.cat} · ${l.quem}`);render()}}
@@ -2218,7 +2488,6 @@ document.body.addEventListener('click',e=>{
     if(aba!=='geral'&&aba!=='cat'){aba='geral';syncAba()}else render();
     return;
   }
-  if(d.vermodo){modoCaixa=(d.vermodo==='caixa');syncVista();return}
   if(d.baixar){document.getElementById('backup').click();return}
   if(d.veraba){aba=d.veraba;syncAba();return}
   if(d.fechafoco){foco=limpaFoco();render();return}
@@ -2226,6 +2495,7 @@ document.body.addEventListener('click',e=>{
   if(d.pgedit!==undefined) renomearPag(+d.pgedit);
   if(d.pgdel!==undefined) apagarPag(+d.pgdel);
   if(d.delregra!==undefined){delete S.regras[d.delregra];render();toast('Regra removida.')}
+  if(d.tom){ S.tomAlerta=d.tom; render(); toast(`Avisos no tom ${d.tom==='duro'?'sem paciência':d.tom}.`); return }
   if(d.dellim!==undefined){S.limites.splice(+d.dellim,1);render();toast('Limite removido.')}
   if(d.editsub!==undefined) editarSub(+d.editsub);
   if(d.delsub!==undefined) apagarSub(+d.delsub);
