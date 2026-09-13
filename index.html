@@ -1638,6 +1638,31 @@ function renderPlano(ym){
       : `As parcelas seguem no mesmo patamar nesta janela.`);
 }
 
+/* Primeiros passos, só enquanto não houver nada lançado */
+function renderSetup(){
+  const box=document.getElementById('setupBox'), geral=document.getElementById('geralBox');
+  if(!box) return;
+  if(!estaVazio()){ box.innerHTML=''; if(geral) geral.style.display=''; return; }
+  if(geral) geral.style.display='none';
+  const passos=[
+    {n:1,t:'Quanto entra',d:'Salário, freela, extras. Marque o salário como "repete todo mês" e ele já preenche os próximos sozinho.',b:'addEntrada2',ok:S.entradas.length},
+    {n:2,t:'Seus fixos',d:'Casa, luz, água, internet, escola, seguro. Lançados uma vez, aparecem em todos os meses daqui pra frente.',b:'addFixo2',ok:S.fixos.length},
+    {n:3,t:'Parcelamentos',d:'Diga em qual parcela cada um está. Eles avançam sozinhos e somem quando terminam.',b:'addParc2',ok:S.parcelas.length}
+  ];
+  box.innerHTML=`<div class="card setup">
+    <h3>Vamos montar ${mesLabel(S.mes)}</h3>
+    <p style="font-size:13px;color:var(--ink2);margin:-6px 0 18px;max-width:640px">
+      Preencha os três blocos uma única vez. Depois é só lançar o do dia a dia — e os próximos meses já nascem preenchidos com o que está comprometido.</p>
+    <div class="passos">${passos.map(x=>`
+      <div class="passo ${x.ok?'ok':''}">
+        <div class="passo-n">${x.ok?'✓':x.n}</div>
+        <h4>${x.t}</h4><p>${x.d}</p>
+        ${x.ok?`<span class="feito">${x.ok} ${x.ok===1?'item':'itens'}</span>`
+              :`<button class="btn sm" data-abrir="${x.b}">Adicionar</button>`}
+      </div>`).join('')}</div>
+  </div>`;
+}
+
 function renderGeral(R,ym){
   renderSetup();
   if(estaVazio()) return;
