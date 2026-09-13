@@ -489,6 +489,27 @@ tr.quitada td.desc{text-decoration:line-through}
   .tira-item.saldo{grid-column:1/3;padding-top:11px;border-top:1px solid var(--line2)}
   .tira-item.saldo b{font-size:21px}
 }
+/* avisos num cartão só */
+.avisos{padding:16px 0 14px;margin-bottom:14px}
+.avisos-cab{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:0 18px;margin-bottom:11px}
+.avisos-trilho{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 18px}
+.avisos-trilho::-webkit-scrollbar{display:none}
+.aviso{flex:0 0 100%;scroll-snap-align:start;display:flex;gap:11px;align-items:flex-start;
+  background:#FFF6FA;border:1px solid var(--line);border-radius:14px;padding:14px 15px;position:relative}
+.aviso.alerta{background:#FFF0F5;border-color:#F7C8DA}
+.aviso.aviso-caixa{background:#F3E7FB;border-color:#DEC5F0}
+.aviso-mark{color:var(--rosa);flex:none;font-size:12px;line-height:1.6}
+.aviso.aviso-caixa .aviso-mark{color:#7B3FA8}
+.aviso-txt{flex:1;font-size:13.5px;color:var(--ink2);line-height:1.5;padding-right:20px}
+.aviso-txt b{color:var(--ink);font-weight:600}
+.aviso-x{position:absolute;top:8px;right:9px;width:26px;height:26px;border:0;background:transparent;
+  color:var(--ink3);font-size:19px;line-height:1;cursor:pointer;border-radius:50%}
+.aviso-x:hover{background:rgba(0,0,0,.05);color:var(--ink)}
+.avisos-pontos{display:flex;gap:6px;justify-content:center;margin-top:11px}
+.avisos-pontos span{width:6px;height:6px;border-radius:50%;background:var(--areia);transition:background .25s,width .25s}
+.avisos-pontos span.on{width:18px;border-radius:3px;background:var(--rosa)}
+@media (min-width:760px){ .aviso{flex:0 0 46%} .avisos-pontos{display:none} }
 </style>
 
 <div class="wrap">
@@ -954,7 +975,7 @@ const VAZIO={
   cartoes:['Nubank','Santander','Amazon'],
   confCartoes:{'Nubank':{fech:18,venc:25},'Santander':{fech:18,venc:25},'Amazon':{fech:18,venc:25}},
   ciclos:{},
-  regras:{}, entradas:[], fixos:[], parcelas:[], lancamentos:[], saldoIni:{}, subcats:[], apagados:{}, quitado:{}, limites:[], confere:{},
+  regras:{}, entradas:[], fixos:[], parcelas:[], lancamentos:[], saldoIni:{}, subcats:[], apagados:{}, quitado:{}, limites:[], confere:{}, dispensados:{},
   categorias:CAT_PADRAO.map(([nome,cor])=>({nome,cor,base:nome})),
   pessoas:QUEM_PADRAO_LISTA.map(([nome,cor])=>({nome,cor,base:nome}))
 };
@@ -1032,6 +1053,7 @@ function migrar(){
   if(!S.quitado)S.quitado={};
   if(!S.confere)S.confere={};
   if(!S.limites)S.limites=[];
+  if(!S.dispensados)S.dispensados={};
   if(S.cicloRef===undefined)S.cicloRef=null;   /* null = mês do calendário */
   if(!S.tomAlerta)S.tomAlerta='direto';        /* gentil | direto | duro */
   /* limite no formato antigo {tipo,alvo} vira {cat,quem} */
@@ -1671,37 +1693,53 @@ function renderGeral(R,ym){
   const nReg=S.lancamentos.length+S.fixos.length+S.parcelas.length+S.entradas.length;
   if(nReg>4){
     const dias=S.ultimoBackup?Math.floor((Date.now()-new Date(S.ultimoBackup))/864e5):null;
-    if(dias===null) al.push({t:'alerta',h:`<b>Você ainda não baixou nenhum backup.</b> São ${nReg} registros aqui dentro. <button class="lnk" data-baixar="1">baixar agora</button>`});
-    else if(dias>=10) al.push({t:'alerta',h:`<b>Último backup há ${dias} dias.</b> <button class="lnk" data-baixar="1">baixar agora</button>`});
+    if(dias===null) al.push({k:'backup',t:'alerta',h:`<b>Você ainda não baixou nenhum backup.</b> São ${nReg} registros aqui dentro. <button class="lnk" data-baixar="1">baixar agora</button>`});
+    else if(dias>=10) al.push({k:'backup',t:'alerta',h:`<b>Último backup há ${dias} dias.</b> <button class="lnk" data-baixar="1">baixar agora</button>`});
   }
   const gCompra=S.lancamentos.filter(l=>mesCompra(l)===ym).reduce((s,l)=>s+l.valor,0);
   const gCaixa=S.lancamentos.filter(l=>l.data&&mesCaixa(l.data,l.pag)===ym).reduce((s,l)=>s+l.valor,0);
   if(!modoCaixa&&Math.abs(gCompra-gCaixa)>0.005){
-    al.push({t:'aviso-caixa',h:`Você <b>gastou ${brl(gCompra)}</b> em ${mesLabel(ym)}, mas o que <b>sai da conta</b> neste mês é ${brl(gCaixa)} — a diferença são compras no cartão que caem em faturas de outros meses.`});
+    al.push({k:'compara:'+ym,t:'aviso-caixa',h:`Você <b>gastou ${brl(gCompra)}</b> em ${mesLabel(ym)}, mas o que <b>sai da conta</b> neste mês é ${brl(gCaixa)} — a diferença são compras no cartão que caem em faturas de outros meses.`});
   }
   if(modoCaixa){
     const vindas=S.lancamentos.filter(l=>l.data&&mesCaixa(l.data,l.pag)===ym&&mesCompra(l)!==ym);
     const soma=vindas.reduce((s,l)=>s+l.valor,0);
-    if(vindas.length) al.push({t:'aviso-caixa',
+    if(vindas.length) al.push({k:'vindas:'+ym,t:'aviso-caixa',
       h:`${vindas.length} ${vindas.length===1?'compra de mês anterior cai':'compras de meses anteriores caem'} aqui — ${brl(soma)} — porque ${vindas.length===1?'entrou numa fatura paga':'entraram em faturas pagas'} neste mês.`});
   }
   statusLimites(R).filter(x=>x.pct>=70).forEach(x=>{
-    al.push({t:x.pct>=100?'alerta':'', h:
+    al.push({k:'lim:'+x.rotulo+':'+ym, t:x.pct>=100?'alerta':'', h:
       `<b>${esc(x.rotulo)}: ${brl(x.usados)} de ${brl(x.valor)}</b> — ${x.pct.toFixed(0)}%.
        ${recadoLimite(x)}
        <button class="lnk" data-limite="${esc(x.cat||'')}|${esc(x.quem||'')}">ver os gastos</button>`});
   });
   const semRegra=R.it.filter(i=>i.cat==='Outros');
-  if(semRegra.length) al.push({t:'alerta',h:`<b>${semRegra.length} lançamentos sem categoria.</b> Estão em "Outros" — ajuste na aba Lançamentos e vira regra: ${semRegra.slice(0,4).map(i=>esc(i.desc)).join(', ')}${semRegra.length>4?'…':''}`});
+  if(semRegra.length) al.push({k:'semcat:'+ym,t:'alerta',h:`<b>${semRegra.length} lançamentos sem categoria.</b> Estão em "Outros" — ajuste na aba Lançamentos e vira regra: ${semRegra.slice(0,4).map(i=>esc(i.desc)).join(', ')}${semRegra.length>4?'…':''}`});
   if(!futuro(ym)){
     const naoPagos=S.fixos.filter(f=>mesDiff(ym,f.desde)>=0&&!(f.pagos&&f.pagos[ym]));
-    if(naoPagos.length) al.push({h:`<b>${naoPagos.length} fixos ainda não marcados como pagos</b> — ${brl(naoPagos.reduce((s,f)=>s+f.valor,0))} previstos.`});
+    if(naoPagos.length) al.push({k:'fixos:'+ym,h:`<b>${naoPagos.length} fixos ainda não marcados como pagos</b> — ${brl(naoPagos.reduce((s,f)=>s+f.valor,0))} previstos.`});
   }
   const semData=S.lancamentos.filter(l=>!l.data&&l.mes===ym).length;
-  if(semData) al.push({h:`<b>${semData} lançamentos sem data.</b> Preencha na aba Lançamentos pro fluxo aparecer.`});
+  if(semData) al.push({k:'semdata:'+ym,h:`<b>${semData} lançamentos sem data.</b> Preencha na aba Lançamentos pro fluxo aparecer.`});
   const acabando=S.parcelas.filter(p=>p.atual+mesDiff(ym,p.mesRef)===p.total);
-  if(acabando.length) al.push({h:`<b>${acabando.length} parcelamentos terminam neste mês</b> — ${brl(acabando.reduce((s,p)=>s+p.valor,0))} que liberam a partir de ${mesLabel(mesShift(ym,1))}.`});
-  document.getElementById('alertas').innerHTML=al.map(a=>`<div class="note ${a.t||''}"><span>◆</span><div>${a.h}</div></div>`).join('');
+  if(acabando.length) al.push({k:'acabando:'+ym,h:`<b>${acabando.length} parcelamentos terminam neste mês</b> — ${brl(acabando.reduce((s,p)=>s+p.valor,0))} que liberam a partir de ${mesLabel(mesShift(ym,1))}.`});
+  /* um cartão só, deslizável, e cada aviso pode ser dispensado */
+  const vivos=al.filter(a=>!a.k||!(S.dispensados||{})[a.k]);
+  document.getElementById('alertas').innerHTML = vivos.length ? `
+    <div class="card avisos">
+      <div class="avisos-cab">
+        <span class="eyebrow">${vivos.length===1?'1 aviso':`${vivos.length} avisos`}</span>
+        ${vivos.length>1?`<button class="lnk" data-dispensatudo="1">dispensar todos</button>`:''}
+      </div>
+      <div class="avisos-trilho">${vivos.map(a=>`
+        <div class="aviso ${a.t||''}">
+          <span class="aviso-mark">◆</span>
+          <div class="aviso-txt">${a.h}</div>
+          ${a.k?`<button class="aviso-x" data-dispensa="${esc(a.k)}" aria-label="Dispensar">×</button>`:''}
+        </div>`).join('')}</div>
+      ${vivos.length>1?`<div class="avisos-pontos" id="avisosPontos">${
+        vivos.map((_,i)=>`<span class="${i?'':'on'}"></span>`).join('')}</div>`:''}
+    </div>` : '';
 
   document.getElementById('catMini').innerHTML=graficoCategorias(R.it,R.entrada,mapaAnterior(ym));
   const escl=R.it.filter(i=>i.tipo==='Variável');
@@ -2023,14 +2061,18 @@ function renderCarrossel(R){
     </div>`;
 }
 
-function ligarPontos(){
-  const t=document.querySelector('.lim-trilho'), p=document.getElementById('limPontos');
+function seguirTrilho(seletor,idPontos,gap){
+  const t=document.querySelector(seletor), p=document.getElementById(idPontos);
   if(!t||!p||t.dataset.ligado) return;
   t.dataset.ligado='1';
   t.addEventListener('scroll',()=>{
-    const i=Math.round(t.scrollLeft/(t.clientWidth+14));
+    const i=Math.round(t.scrollLeft/(t.clientWidth+gap));
     [...p.children].forEach((b,n)=>b.classList.toggle('on',n===i));
   },{passive:true});
+}
+function ligarPontos(){
+  seguirTrilho('.lim-trilho','limPontos',14);
+  seguirTrilho('.avisos-trilho','avisosPontos',12);
 }
 
 function renderLimites(R){
@@ -2512,6 +2554,12 @@ document.body.addEventListener('click',e=>{
     foco={cat:c||null, sub:null, quem:q||null, tipo:null};
     if(aba!=='geral'&&aba!=='cat'){aba='geral';syncAba()}else render();
     return;
+  }
+  if(d.dispensa){S.dispensados=S.dispensados||{};S.dispensados[d.dispensa]=agora();render();return}
+  if(d.dispensatudo){
+    S.dispensados=S.dispensados||{};
+    document.querySelectorAll('[data-dispensa]').forEach(b=>S.dispensados[b.dataset.dispensa]=agora());
+    render(); toast('Avisos dispensados. Voltam se a situação mudar.'); return;
   }
   if(d.baixar){document.getElementById('backup').click();return}
   if(d.veraba){aba=d.veraba;syncAba();return}
