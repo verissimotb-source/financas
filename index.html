@@ -1461,20 +1461,28 @@ function renderFluxo(ym){
   /* duas leituras do mesmo mês: o que está planejado e o que já aconteceu */
   const saldo=new Array(dias+1).fill(0), real=new Array(dias+1).fill(0);
   saldo[0]=ini; real[0]=ini;
-  let acc=ini, accReal=ini;
+
+  /* Hoje é hoje. Num mês passado, o corte é o fim do mês;
+     num mês futuro, ainda não há realizado nenhum. */
+  const ateDia = (hojeYM()===ym) ? Math.min(dias, new Date().getDate())
+               : (mesDiff(ym,hojeYM())<0 ? dias : 0);
+  const ehMesCorrente = hojeYM()===ym;
+
+  /* previsto: tudo, no dia agendado */
+  let acc=ini;
   for(let d=1;d<=dias;d++){
-    ev.filter(e=>e.dia===d).forEach(e=>{
-      const v=(e.entra||0)-(e.sai||0);
-      acc+=v;
-      if(estaQuitado(e,ym)) accReal+=v;
-    });
-    saldo[d]=acc; real[d]=accReal;
+    ev.filter(e=>e.dia===d).forEach(e=>{acc+=(e.entra||0)-(e.sai||0)});
+    saldo[d]=acc;
+  }
+  /* realizado: só o que você confirmou. O que foi confirmado mas está
+     agendado pra frente conta hoje, porque o dinheiro já se moveu. */
+  let accReal=ini;
+  for(let d=1;d<=dias;d++){
+    ev.filter(e=>estaQuitado(e,ym)&&Math.min(e.dia,ateDia||e.dia)===d)
+      .forEach(e=>{accReal+=(e.entra||0)-(e.sai||0)});
+    real[d]=accReal;
   }
   const fim=saldo[dias];
-  /* a linha do realizado para no último dia com movimento confirmado */
-  const marcados=ev.filter(e=>estaQuitado(e,ym)).map(e=>e.dia);
-  const hojeAqui=(hojeYM()===ym)?new Date().getDate():0;
-  const ateDia=Math.min(dias, Math.max(hojeAqui, marcados.length?Math.max(...marcados):0));
 
   let minD=1; for(let d=1;d<=dias;d++) if(saldo[d]<saldo[minD]) minD=d;
   const min=saldo[minD];
@@ -1493,7 +1501,7 @@ function renderFluxo(ym){
   if(ateDia&&ev.some(e=>estaQuitado(e,ym))){
     const dif=real[ateDia]-saldo[ateDia];
     cp.innerHTML=`<div class="compara-caixa ${dif>=0?'bom':'ruim'}">
-      <b>No dia ${ateDia} você tem ${brl(real[ateDia])}.</b>
+      <b>${ehMesCorrente?`Hoje, dia ${ateDia}`:`No fim de ${mesLabel(ym)}`}, você tem ${brl(real[ateDia])}.</b>
       O plano dizia ${brl(saldo[ateDia])} —
       ${Math.abs(dif)<0.005?'exatamente no previsto.'
         :dif>0?`está <b>${brl(dif)} melhor</b> que o previsto.`
@@ -1571,7 +1579,7 @@ function renderFluxo(ym){
       <circle cx="${X(minD)}" cy="${Y(min)}" r="5" fill="none"
         stroke="${min<0?'var(--rosa)':'var(--menta)'}" stroke-width="2.4"/>
       ${marcas}</svg>
-      <div class="spinelbl"><span>dia 1</span>${ateDia?`<span>hoje: dia ${ateDia}</span>`:''}<span>dia ${dias}</span></div>
+      <div class="spinelbl"><span>dia 1</span>${ateDia&&ehMesCorrente?`<span>hoje: dia ${ateDia}</span>`:''}<span>dia ${dias}</span></div>
       <div class="legenda" style="margin-top:10px">
         <div class="leg"><i style="background:var(--ameixa)"></i><span>realizado</span></div>
         <div class="leg"><i style="background:var(--ink3)"></i><span>previsto</span></div>
