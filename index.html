@@ -510,6 +510,14 @@ tr.quitada td.desc{text-decoration:line-through}
 .avisos-pontos span{width:6px;height:6px;border-radius:50%;background:var(--areia);transition:background .25s,width .25s}
 .avisos-pontos span.on{width:18px;border-radius:3px;background:var(--rosa)}
 @media (min-width:760px){ .aviso{flex:0 0 46%} .avisos-pontos{display:none} }
+.ciclo-conflito{background:#FFF6E8;border:1px solid #F0DDB8;border-radius:11px;
+  padding:10px 12px;margin:9px 0 2px;font-size:12px;color:#6B5410;line-height:1.5}
+.ciclo-conflito b{font-weight:600}
+.num.inval.exc{border-color:var(--orquidea);background:#F9F0FD}
+.so-mes{font-size:10px;color:var(--orquidea);margin-top:4px;text-align:right;line-height:1.35}
+.so-mes .lnk{font-size:10px}
+select.selpag{font-size:11.5px;padding:5px 22px 5px 8px;color:var(--ink2);max-width:118px}
+@media (max-width:760px){ select.selpag{max-width:100%;font-size:12.5px} }
 </style>
 
 <div class="wrap">
@@ -1161,8 +1169,8 @@ function confCartao(pag){
 const iso=(ym,dia)=>`${ym}-${String(Math.max(1,Math.min(dia,diasNoMes(ym)))).padStart(2,'0')}`;
 
 /* ciclo que a regra prevê para a fatura PAGA no mês `ym` */
-function cicloPadrao(ym,pag){
-  const {fech,venc}=confCartao(pag);
+function cicloPadrao(ym,pag,conf){
+  const {fech,venc}=conf||confCartao(pag);
   const fecha=(venc>=fech)?ym:mesShift(ym,-1);
   const ant=mesShift(fecha,-1);
   return {venc:iso(ym,venc), de:iso(ant,fech+1), ate:iso(fecha,fech), padrao:true};
@@ -1173,16 +1181,26 @@ function ciclo(ym,pag){
   return (o&&o.de&&o.ate&&o.venc)?{...o,padrao:false}:cicloPadrao(ym,pag);
 }
 /* em que mês a compra é paga */
-function mesFatura(data,pag){
+/* Devolve em que fatura a compra caiu e POR QUE — datas que você
+   escreveu na mão vencem a regra do cartão, e isso precisa ficar visível. */
+function origemFatura(data,pag){
   const editados=(S.ciclos||{})[pag]||{};
-  for(const ym in editados){                       // datas escritas por você vêm primeiro
+  /* se mais de uma fatura cobrir a data, vale a que começa mais tarde —
+     é sempre a mais recente que você configurou para aquele trecho */
+  let melhor=null;
+  for(const ym in editados){
     const o=editados[ym];
-    if(o&&o.de&&o.ate&&data>=o.de&&data<=o.ate) return ym;
+    if(o&&o.de&&o.ate&&data>=o.de&&data<=o.ate){
+      if(!melhor||o.de>melhor.o.de) melhor={ym,o};
+    }
   }
+  if(melhor) return {mes:melhor.ym, manual:true, de:melhor.o.de, ate:melhor.o.ate,
+                     conflito:Object.values(editados).filter(o=>o&&o.de&&o.ate&&data>=o.de&&data<=o.ate).length>1};
   const {fech,venc}=confCartao(pag);
   const fecha=(+data.slice(8,10)<=fech)?data.slice(0,7):mesShift(data.slice(0,7),1);
-  return (venc>=fech)?fecha:mesShift(fecha,1);
+  return {mes:(venc>=fech)?fecha:mesShift(fecha,1), manual:false, fech};
 }
+function mesFatura(data,pag){ return origemFatura(data,pag).mes; }
 function mesCaixa(data,pag){
   if(!data) return null;
   return ehCartao(pag)?mesFatura(data,pag):data.slice(0,7);
@@ -1191,10 +1209,38 @@ const mesCompra=l=>l.data?l.data.slice(0,7):l.mes;
 const mesDoLanc=l=>modoCaixa?(mesCaixa(l.data,l.pag)||l.mes):mesCompra(l);
 const dm=d=>d?d.slice(8,10)+'/'+d.slice(5,7):'—';
 
+/* Um fixo pode ter valor diferente em cada mês, e pode ser removido
+   de um mês só ou dali em diante — sem tocar nos outros.
+   f.valor  = valor base
+   f.vpor   = {mês: valor}  exceções de valor
+   f.pulos  = {mês: 1}      meses em que ele não existe
+   f.ate    = último mês em que vale                              */
+function valorFixo(f,ym){
+  const v=(f.vpor||{})[ym];
+  return (typeof v==='number')?v:f.valor;
+}
+function fixoVale(f,ym){
+  if(mesDiff(ym,f.desde)<0) return false;
+  if(f.ate&&mesDiff(ym,f.ate)>0) return false;
+  if((f.pulos||{})[ym]) return false;
+  return true;
+}
+function fixosDoMes(ym){ return S.fixos.filter(f=>fixoVale(f,ym)); }
+/* meses que já existem no painel, do mais antigo ao mês em vista */
+function mesesComDados(){
+  const ini=mesMinimo(), fim=S.mes, out=[];
+  for(let m=ini; mesDiff(fim,m)>=0; m=mesShift(m,1)) out.push(m);
+  return out;
+}
+/* o fixo aparece em mais de um mês? se não, editar não precisa perguntar nada */
+function temOutrosMeses(f,ym){
+  return mesesComDados().some(m=>m!==ym&&fixoVale(f,m));
+}
+
 function itensDoMes(ym){
   const out=[];
   S.fixos.forEach(f=>{ if(mesDiff(ym,f.desde)>=0)
-    out.push({id:f.id,tipo:'Fixo',desc:f.nome,valor:f.valor,cat:f.cat,sub:f.sub,quem:f.quem,pag:f.pag,data:'',prev:futuro(ym)}) });
+    out.push({id:f.id,tipo:'Fixo',desc:f.nome,valor:valorFixo(f,ym),cat:f.cat,sub:f.sub,quem:f.quem,pag:f.pag,data:'',prev:futuro(ym)}) });
   S.parcelas.forEach(p=>{
     const at=p.atual+mesDiff(ym,p.mesRef);
     if(at>=1&&at<=p.total) out.push({id:p.id,tipo:'Parcelado',desc:p.nome,valor:p.valor,cat:p.cat,sub:p.sub,
@@ -1242,8 +1288,8 @@ function fluxoDoMes(ym){
   const ev=[];
   entradasDoMes(ym).forEach(e=>ev.push({dia:e.dia||5,desc:e.nome,entra:e.valor,
     chave:`e:${e.id}:${ym}`, tipo:'entrada'}));
-  S.fixos.filter(f=>mesDiff(ym,f.desde)>=0&&!ehCartao(f.pag))
-    .forEach(f=>ev.push({dia:f.dia||10,desc:f.nome,sai:f.valor,chave:`f:${f.id}:${ym}`,fixo:f,
+  fixosDoMes(ym).filter(f=>!ehCartao(f.pag))
+    .forEach(f=>ev.push({dia:f.dia||10,desc:f.nome,sai:valorFixo(f,ym),chave:`f:${f.id}:${ym}`,fixo:f,
       tipo:'fixo', cat:f.cat, sub:f.sub, quem:f.quem, pag:f.pag}));
   S.parcelas.forEach(p=>{
     const at=p.atual+mesDiff(ym,p.mesRef);
@@ -1257,7 +1303,7 @@ function fluxoDoMes(ym){
   S.cartoes.forEach(c=>{
     let tot=0, itens=0;
     S.lancamentos.filter(l=>l.pag===c&&l.data&&mesCaixa(l.data,l.pag)===ym).forEach(l=>{tot+=l.valor;itens++});
-    S.fixos.filter(f=>f.pag===c&&mesDiff(ym,f.desde)>=0).forEach(f=>{tot+=f.valor;itens++});
+    fixosDoMes(ym).filter(f=>f.pag===c).forEach(f=>{tot+=valorFixo(f,ym);itens++});
     S.parcelas.forEach(p=>{const at=p.atual+mesDiff(ym,p.mesRef);
       if(p.pag===c&&at>=1&&at<=p.total){tot+=p.valor;itens++}});
     if(tot>0.004) ev.push({dia:+ciclo(ym,c).venc.slice(8,10),desc:`Fatura ${c}`,sai:tot,
@@ -1724,8 +1770,8 @@ function renderGeral(R,ym){
   const semRegra=R.it.filter(i=>i.cat==='Outros');
   if(semRegra.length) al.push({k:'semcat:'+ym,t:'alerta',h:`<b>${semRegra.length} lançamentos sem categoria.</b> Estão em "Outros" — ajuste na aba Lançamentos e vira regra: ${semRegra.slice(0,4).map(i=>esc(i.desc)).join(', ')}${semRegra.length>4?'…':''}`});
   if(!futuro(ym)){
-    const naoPagos=S.fixos.filter(f=>mesDiff(ym,f.desde)>=0&&!(f.pagos&&f.pagos[ym]));
-    if(naoPagos.length) al.push({k:'fixos:'+ym,h:`<b>${naoPagos.length} fixos ainda não marcados como pagos</b> — ${brl(naoPagos.reduce((s,f)=>s+f.valor,0))} previstos.`});
+    const naoPagos=fixosDoMes(ym).filter(f=>!(f.pagos&&f.pagos[ym]));
+    if(naoPagos.length) al.push({k:'fixos:'+ym,h:`<b>${naoPagos.length} fixos ainda não marcados como pagos</b> — ${brl(naoPagos.reduce((s,f)=>s+valorFixo(f,ym),0))} previstos.`});
   }
   const semData=S.lancamentos.filter(l=>!l.data&&l.mes===ym).length;
   if(semData) al.push({k:'semdata:'+ym,h:`<b>${semData} lançamentos sem data.</b> Preencha na aba Lançamentos pro fluxo aparecer.`});
@@ -2244,6 +2290,21 @@ function renderFat(R){
           <input type="date" data-cde="${ic}" value="${cl.de}"></div>
         <div class="ciclo-l"><span>até</span>
           <input type="date" data-cate="${ic}" value="${cl.ate}"></div>
+        ${(()=>{
+          const qtd=Object.keys((S.ciclos||{})[c]||{}).length;
+          return qtd?`<div class="ciclo-p" style="margin-top:8px">
+            ${qtd} ${qtd===1?'fatura deste cartão tem datas suas':'faturas deste cartão têm datas suas'}.
+            <button class="lnk" data-soltarciclo="${esc(c)}">fazer todas seguirem a regra</button></div>`:'';
+        })()}
+        ${(()=>{
+          if(cl.padrao) return '';
+          const pd=cicloPadrao(ym,c);
+          if(pd.de===cl.de&&pd.ate===cl.ate) return '';
+          return `<div class="ciclo-conflito">
+            A regra diz <b>${dm(pd.de)} a ${dm(pd.ate)}</b> (fecha dia ${confCartao(c).fech}),
+            mas você escreveu <b>${dm(cl.de)} a ${dm(cl.ate)}</b>.
+            O que vale é o seu — compras nesse intervalo caem nesta fatura.</div>`;
+        })()}
         <div class="ciclo-p">${cl.padrao
           ? 'Datas sugeridas pela regra do cartão. Corrija se o banco mudou este mês.'
           : `<b>Datas suas.</b> <button class="lnk" data-cpad="${ic}">voltar ao padrão</button>`}</div>
@@ -2298,7 +2359,7 @@ function renderPagamentos(){
 }
 
 function renderFix(ym){
-  const vis=S.fixos.filter(f=>mesDiff(ym,f.desde)>=0);
+  const vis=fixosDoMes(ym);
   document.getElementById('fixTbl').className='tbl mob fix';
   document.getElementById('fixTbl').innerHTML= vis.length?
     `<thead><tr><th style="width:32px">${futuro(ym)?'':'Pago'}</th><th>Nome</th><th style="width:58px">Dia</th><th>Categoria</th><th>Quem</th>
@@ -2309,11 +2370,15 @@ function renderFix(ym){
       <td><input class="num inval" style="width:48px;text-align:center" data-fdia="${f.id}" value="${f.dia||10}" inputmode="numeric"></td>
       <td>${selCat(f.cat,'fc',f.id)}${selSub(f.sub,'fsb',f.id,f.cat)}</td>
       <td>${selQuem(f.quem,'fq',f.id)}</td>
-      <td class="hide-sm"><span class="mini">${esc(f.pag)}</span></td>
-      <td style="text-align:right"><input class="num inval" data-fv="${f.id}" value="${brlc(f.valor)}"></td>
+      <td class="hide-sm">${selPag(f.pag,'fpag',f.id)}</td>
+      <td style="text-align:right">
+        <input class="num inval${(f.vpor||{})[ym]!==undefined?' exc':''}" data-fv="${f.id}" value="${brlc(valorFixo(f,ym))}"
+          title="${(f.vpor||{})[ym]!==undefined?`valor só deste mês — o padrão é ${brl(f.valor)}`:''}">
+        ${(f.vpor||{})[ym]!==undefined?`<div class="so-mes">só neste mês · <button class="lnk" data-fvreset="${f.id}">voltar a ${brl(f.valor)}</button></div>`:''}
+      </td>
       <td><button class="btn ghost sm" data-delfix="${f.id}">×</button></td></tr>`).join('')
     +`<tr><td></td><td><b>Total</b></td><td></td><td></td><td></td><td class="hide-sm"></td>
-      <td class="r"><b>${brl(vis.reduce((s,f)=>s+f.valor,0))}</b></td><td></td></tr></tbody>`
+      <td class="r"><b>${brl(vis.reduce((s,f)=>s+valorFixo(f,ym),0))}</b></td><td></td></tr></tbody>`
     :`<tbody><tr><td><div class="empty"><b>Nenhum fixo ainda</b>Casa, luz, água, internet, Fies, seguro — cadastre uma vez e vale pra todo mês.</div></td></tr></tbody>`;
 
   const ativas=S.parcelas.map(p=>({p,at:p.atual+mesDiff(ym,p.mesRef)})).filter(x=>x.at>=1&&x.at<=x.p.total);
@@ -2321,7 +2386,7 @@ function renderFix(ym){
     `<thead><tr><th>O que foi</th><th style="width:58px">Dia</th><th>Categoria</th><th>Quem</th><th style="width:130px">Progresso</th>
      <th class="hide-sm">Acaba em</th><th style="text-align:right">Parcela</th><th></th></tr></thead><tbody>`
     +ativas.map(({p,at})=>`<tr>
-      <td class="desc">${esc(p.nome)}<br><span class="mini">${esc(p.pag)}</span></td>
+      <td class="desc">${esc(p.nome)}<br>${selPag(p.pag,'ppag',p.id)}</td>
       <td>${ehCartao(p.pag)?'<span class="mini">na fatura</span>'
         :`<input class="num inval" style="width:48px;text-align:center" data-pdia="${p.id}" value="${p.dia||10}" inputmode="numeric">`}</td>
       <td>${selCat(p.cat,'pc',p.id)}${selSub(p.sub,'psb',p.id,p.cat)}</td>
@@ -2370,11 +2435,14 @@ function renderLanc(ym,R){
     +(ls.length?ls.map(l=>`<tr class="${l.prev?'prevista':''}"${l.cat==='Outros'?' style="background:#FFF4F8"':''}>
       <td><input type="checkbox" class="chk" data-lp="${l.id}" ${l.prev?'':'checked'} aria-label="Já aconteceu"></td>
       <td><input type="date" value="${l.data}" data-d="${l.id}" style="padding:3px 6px;font-size:11.5px;width:100%">
-        ${(l.data&&mesCaixa(l.data,l.pag)!==mesCompra(l))?`<div class="saiem">pago em ${mesLabel(mesCaixa(l.data,l.pag))}</div>`:''}</td>
+        ${(l.data&&mesCaixa(l.data,l.pag)!==mesCompra(l))?(()=>{
+          const o=ehCartao(l.pag)?origemFatura(l.data,l.pag):null;
+          return `<div class="saiem" title="${o&&o.manual?`datas ajustadas por você: ${dm(o.de)} a ${dm(o.ate)}`:o?`${esc(l.pag)} fecha dia ${o.fech}`:''}">pago em ${mesLabel(mesCaixa(l.data,l.pag))}${o&&o.manual?' ✎':''}</div>`;
+        })():''}</td>
       <td class="desc">${esc(l.desc)}</td>
       <td>${selCat(l.cat,'c',l.id)}${selSub(l.sub,'sb',l.id,l.cat)}</td>
       <td>${selQuem(l.quem,'q',l.id)}</td>
-      <td class="hide-sm"><span class="mini">${esc(l.pag)}</span></td>
+      <td class="hide-sm">${selPag(l.pag,'lpag',l.id)}</td>
       <td style="text-align:right"><input class="num inval" data-lv="${l.id}" value="${brlc(l.valor)}"></td>
       <td><button class="btn ghost sm" data-del="${l.id}">×</button></td></tr>`).join('')
      :`<tr><td colspan="8"><div class="empty"><b>Mês em branco</b>${futuro(ym)?'Lance aqui o que você já sabe que vai gastar — vai entrar como previsto.':'Lance o primeiro gasto no campo lá em cima.'}</div></td></tr>`)
@@ -2403,6 +2471,10 @@ const selSub=(v,k,id,cat)=>{
 };
 const selQuem=(v,k,id)=>`<select class="selq" data-${k}="${id}">`
   +nomesQuem().map(c=>`<option ${c===v?'selected':''}>${esc(c)}</option>`).join('')+`</select>`;
+/* trocar a forma de pagamento de algo já lançado, sem refazer */
+const selPag=(v,k,id)=>`<select class="selq selpag" data-${k}="${id}" aria-label="Pago com">`
+  +S.pagamentos.map(c=>`<option ${c===v?'selected':''}>${esc(c)}</option>`).join('')
+  +(S.pagamentos.includes(v)?'':`<option selected>${esc(v)}</option>`)+`</select>`;
 
 /* ============================================================
    6. INTERAÇÃO
@@ -2465,7 +2537,12 @@ function lancarRapido(){
   const destino=mesDoLanc(novo);
   if(destino!==S.mes){
     S.mes=destino;
-    toast(`${d} caiu em ${mesLabel(destino)} pela data — te levei pra lá.`);
+    const o=(data&&ehCartao(novo.pag))?origemFatura(data,novo.pag):null;
+    toast(o&&o.manual
+      ? `${d} caiu na fatura de ${mesLabel(destino)}: você ajustou essa fatura para ${dm(o.de)}–${dm(o.ate)}.`
+      : o
+        ? `${d} caiu na fatura de ${mesLabel(destino)} — ${novo.pag} fecha dia ${o.fech}.`
+        : `${d} caiu em ${mesLabel(destino)} pela data — te levei pra lá.`);
   }else{
     toast(cat==='Outros'?`${d} entrou sem categoria — escolhe embaixo.`
       :`${d} → ${cat} · ${quem}${futuro(mes)?' (previsto)':''}`);
@@ -2478,6 +2555,40 @@ document.getElementById('qAdd').onclick=lancarRapido;
 const acha=(arr,id)=>arr.find(x=>x.id===id);
 document.body.addEventListener('change',e=>{
   const t=e.target,d=t.dataset;
+  /* trocar a forma de pagamento de algo já lançado */
+  if(d.lpag!==undefined){
+    const l=acha(S.lancamentos,d.lpag); if(!l) return;
+    const antes=l.pag, destino0=mesDoLanc(l);
+    l.pag=t.value; tocar(l);
+    const destino=mesDoLanc(l);
+    if(destino!==destino0&&destino!==S.mes){
+      S.mes=destino;
+      toast(`${l.desc}: ${antes} → ${t.value}. Passou para ${mesLabel(destino)} — te levei pra lá.`);
+    }else if(destino!==destino0){
+      toast(`${l.desc}: ${antes} → ${t.value}. Agora sai em ${mesLabel(destino)}.`);
+    }else{
+      toast(`${l.desc}: ${antes} → ${t.value}.`);
+    }
+    render(); return;
+  }
+  if(d.fpag!==undefined){
+    const f=acha(S.fixos,d.fpag); if(!f) return;
+    const antes=f.pag; f.pag=t.value; tocar(f); render();
+    toast(`${f.nome}: ${antes} → ${t.value}.`
+      + (ehCartao(t.value)!==ehCartao(antes)
+         ? (ehCartao(t.value)?' Agora entra na fatura.':' Agora sai na conta no dia.')
+         : ''));
+    return;
+  }
+  if(d.ppag!==undefined){
+    const pc=acha(S.parcelas,d.ppag); if(!pc) return;
+    const antes=pc.pag; pc.pag=t.value; tocar(pc); render();
+    toast(`${pc.nome}: ${antes} → ${t.value}.`
+      + (ehCartao(t.value)!==ehCartao(antes)
+         ? (ehCartao(t.value)?' Agora entra na fatura.':' Agora sai na conta no dia.')
+         : ''));
+    return;
+  }
   if(t.id==='selCiclo'){
     S.cicloRef=(t.value==='cal')?null:t.value; render();
     toast(`Padrão: ${t.value==='cal'?'mês do calendário':'ciclo do '+t.value}.`); return;
@@ -2504,7 +2615,40 @@ document.body.addEventListener('change',e=>{
   if(d.lp){const l=acha(S.lancamentos,d.lp);if(l){l.prev=!t.checked;render()}}
   if(d.fc){const f=acha(S.fixos,d.fc);if(f){f.cat=t.value;tocar(f);render()}}
   if(d.fq){const f=acha(S.fixos,d.fq);if(f){f.quem=t.value;tocar(f);render()}}
-  if(d.fv){const f=acha(S.fixos,d.fv),v=parseVal(t.value);if(f&&v){f.valor=v;tocar(f)}render()}
+  if(d.fv){
+    const f=acha(S.fixos,d.fv), v=parseVal(t.value), ym=S.mes;
+    if(!f||!v){render();return}
+    const atual=valorFixo(f,ym);
+    if(Math.abs(v-atual)<0.005){render();return}
+    const soUm=S.fixos.filter(x=>x.id===f.id).length && !temOutrosMeses(f,ym);
+    if(soUm){ f.valor=v; tocar(f); render(); return; }
+    abrirForm(`${f.nome}: ${brl(atual)} → ${brl(v)}`,
+      'Esse fixo se repete todo mês. Onde esse valor novo vale?',
+      [{k:'alcance',lbl:'Aplicar em',tipo:'select',
+        opts:[`Só em ${mesLabel(ym)}`,`De ${mesLabel(ym)} em diante`,'Todos os meses']}],
+      o=>{
+        if(o.alcance.startsWith('Só')){
+          f.vpor=f.vpor||{}; f.vpor[ym]=v;
+        }else if(o.alcance.startsWith('De')){
+          f.valor=v;
+          Object.keys(f.vpor||{}).forEach(m=>{ if(mesDiff(m,ym)>=0) delete f.vpor[m] });
+          /* os meses anteriores guardam o valor antigo, para não mudarem */
+          f.vpor=f.vpor||{};
+          mesesComDados().filter(m=>mesDiff(m,ym)<0&&mesDiff(m,f.desde)>=0)
+            .forEach(m=>{ if(f.vpor[m]===undefined) f.vpor[m]=atual });
+        }else{
+          f.valor=v; f.vpor={};
+        }
+        tocar(f); dF.close(); render();
+        toast(`${f.nome}: ${brl(v)} ${o.alcance.toLowerCase()}.`);
+      });
+    render(); return;
+  }
+  if(d.fvreset){
+    const f=acha(S.fixos,d.fvreset);
+    if(f&&f.vpor){ delete f.vpor[S.mes]; tocar(f); render(); toast(`${f.nome} voltou ao valor padrão neste mês.`); }
+    return;
+  }
   if(d.pc){const p=acha(S.parcelas,d.pc);if(p){p.cat=t.value;tocar(p);render()}}
   if(d.pq){const p=acha(S.parcelas,d.pq);if(p){p.quem=t.value;tocar(p);render()}}
   if(d.pv){const p=acha(S.parcelas,d.pv),v=parseVal(t.value);if(p&&v){p.valor=v;tocar(p)}render()}
@@ -2529,7 +2673,17 @@ document.body.addEventListener('change',e=>{
     const a=confCartao(cart), n=Math.max(1,Math.min(31,parseInt(t.value)||1));
     S.confCartoes=S.confCartoes||{};
     S.confCartoes[cart]=(d.cf!==undefined)?{fech:n,venc:a.venc}:{fech:a.fech,venc:n};
-    render(); toast(`${cart}: fecha ${S.confCartoes[cart].fech}, vence ${S.confCartoes[cart].venc}.`);
+    /* datas que eram só a regra antiga congelada não são escolha sua — saem */
+    const ovs=(S.ciclos||{})[cart]||{};
+    let soltos=0;
+    Object.keys(ovs).forEach(m=>{
+      const antigo=cicloPadrao(m,cart,a);
+      const o=ovs[m];
+      if(o.de===antigo.de&&o.ate===antigo.ate&&o.venc===antigo.venc){ delete ovs[m]; soltos++; }
+    });
+    render();
+    toast(`${cart}: fecha ${S.confCartoes[cart].fech}, vence ${S.confCartoes[cart].venc}.`
+      + (soltos?` ${soltos} ${soltos===1?'fatura seguia':'faturas seguiam'} a regra antiga e ${soltos===1?'foi atualizada':'foram atualizadas'}.`:''));
   }
   if(d.cvenc!==undefined||d.cde!==undefined||d.cate!==undefined){
     const ic=+(d.cvenc??d.cde??d.cate), cart=S.cartoes[ic]; if(!cart||!t.value) return;
@@ -2540,12 +2694,28 @@ document.body.addEventListener('change',e=>{
     if(d.cate!==undefined) novo.ate=t.value;
     if(novo.de>novo.ate){toast('A data inicial ficou depois da final.');render();return}
     S.ciclos=S.ciclos||{}; S.ciclos[cart]=S.ciclos[cart]||{};
+    /* duas faturas não podem cobrir o mesmo dia: as vizinhas se ajustam */
+    const passo=(iso,n)=>{const d=new Date(iso);d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+    let ajustadas=0;
+    Object.keys(S.ciclos[cart]).forEach(m=>{
+      if(m===S.mes) return;
+      const o=S.ciclos[cart][m];
+      if(!o||!o.de||!o.ate) return;
+      if(o.de>=novo.de&&o.ate<=novo.ate){ delete S.ciclos[cart][m]; ajustadas++; return; }
+      if(o.ate>=novo.de&&o.de<novo.de){ o.ate=passo(novo.de,-1); ajustadas++; }
+      if(o.de<=novo.ate&&o.ate>novo.ate){ o.de=passo(novo.ate,1); ajustadas++; }
+    });
+    const pad=cicloPadrao(S.mes,cart);
+    if(novo.de===pad.de&&novo.ate===pad.ate&&novo.venc===pad.venc){
+      delete S.ciclos[cart][S.mes]; render();
+      toast(`Fatura de ${mesLabel(S.mes)} voltou a seguir a regra do cartão.`); return;
+    }
     const outros=Object.entries(S.ciclos[cart]).filter(([m])=>m!==S.mes)
       .filter(([,o])=>o.de&&o.ate&&novo.de<=o.ate&&novo.ate>=o.de);
     S.ciclos[cart][S.mes]=novo;
     render();
-    toast(outros.length?`Salvo, mas esse intervalo encosta no de ${mesLabel(outros[0][0])}.`
-                       :`Fatura de ${mesLabel(S.mes)} ajustada.`);
+    toast(`Fatura de ${mesLabel(S.mes)} ajustada.`
+      + (ajustadas?` ${ajustadas} ${ajustadas===1?'fatura vizinha cedeu':'faturas vizinhas cederam'} o trecho em comum.`:''));
   }
   if(d.ev){const en=acha(S.entradas,d.ev),v=parseVal(t.value);
     if(en&&v){en.valor=v;tocar(en);if(en.fixa)toast('Valor mudou aqui e nos meses seguintes.')}render()}
@@ -2555,7 +2725,28 @@ document.body.addEventListener('click',e=>{
   const d=b.dataset;
   if(d.del){S.lancamentos=apagar(S.lancamentos,d.del);render()}
   if(d.delent){S.entradas=apagar(S.entradas,d.delent);render()}
-  if(d.delfix){S.fixos=apagar(S.fixos,d.delfix);render()}
+  if(d.delfix){
+    const f=acha(S.fixos,d.delfix), ym=S.mes;
+    if(!f) return;
+    if(!temOutrosMeses(f,ym)){ S.fixos=apagar(S.fixos,f.id); render(); return; }
+    abrirForm(`Remover ${f.nome}`,
+      'Esse fixo se repete todo mês. De onde você quer tirar?',
+      [{k:'alcance',lbl:'Remover',tipo:'select',
+        opts:[`Só de ${mesLabel(ym)}`,`De ${mesLabel(ym)} em diante`,'De todos os meses']}],
+      o=>{
+        if(o.alcance.startsWith('Só')){
+          f.pulos=f.pulos||{}; f.pulos[ym]=1; tocar(f);
+          toast(`${f.nome} saiu de ${mesLabel(ym)}. Os outros meses continuam.`);
+        }else if(o.alcance.startsWith('De ')&&o.alcance.includes('em diante')){
+          if(mesDiff(ym,f.desde)<=0){ S.fixos=apagar(S.fixos,f.id); toast(`${f.nome} removido.`); }
+          else { f.ate=mesShift(ym,-1); tocar(f); toast(`${f.nome} vale até ${mesLabel(f.ate)}.`); }
+        }else{
+          S.fixos=apagar(S.fixos,f.id); toast(`${f.nome} removido de todos os meses.`);
+        }
+        dF.close(); render();
+      });
+    return;
+  }
   if(d.delparc){S.parcelas=apagar(S.parcelas,d.delparc);render()}
   if(d.limite!==undefined){
     const [c,q]=d.limite.split('|');
@@ -2584,6 +2775,12 @@ document.body.addEventListener('click',e=>{
   if(d.editquem!==undefined) editarItem('quem',+d.editquem);
   if(d.delcat!==undefined) apagarItem('cat',+d.delcat);
   if(d.delquem!==undefined) apagarItem('quem',+d.delquem);
+  if(d.soltarciclo){
+    const n=Object.keys((S.ciclos||{})[d.soltarciclo]||{}).length;
+    if(S.ciclos) delete S.ciclos[d.soltarciclo];
+    render(); toast(`${n} ${n===1?'fatura voltou':'faturas voltaram'} a seguir a regra do ${d.soltarciclo}.`);
+    return;
+  }
   if(d.cpad!==undefined){
     const cart=S.cartoes[+d.cpad];
     if(cart&&S.ciclos&&S.ciclos[cart]){delete S.ciclos[cart][S.mes];render();toast('Voltou para a regra do cartão.')}
