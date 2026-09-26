@@ -1267,7 +1267,26 @@ function itensDoMes(ym){
       pag:l.pag,data:l.data,prev:!!l.prev,ref:l}));
   return out;
 }
-const entradasDoMes=ym=>S.entradas.filter(e=>e.fixa?mesDiff(ym,e.mes)>=0:e.mes===ym);
+/* Entrada que repete pode ter valor próprio em cada mês e pode ser
+   tirada de um mês só ou dali em diante — mesma lógica dos fixos. */
+function valorEntrada(e,ym){
+  const v=(e.vpor||{})[ym];
+  return (typeof v==='number')?v:e.valor;
+}
+function entradaVale(e,ym){
+  if(!e.fixa) return e.mes===ym;
+  if(mesDiff(ym,e.mes)<0) return false;
+  if(e.ate&&mesDiff(ym,e.ate)>0) return false;
+  if((e.pulos||{})[ym]) return false;
+  return true;
+}
+const entradasDoMes=ym=>S.entradas.filter(e=>entradaVale(e,ym));
+/* a entrada aparece em outros meses além deste? */
+function entradaEmOutrosMeses(e,ym){
+  if(!e.fixa) return false;
+  if(mesesComDados().some(m=>m!==ym&&entradaVale(e,m))) return true;
+  return entradaVale(e,mesShift(ym,1));
+}
 function resumo(ym){
   const it=itensDoMes(ym), ent=entradasDoMes(ym);
   const sum=a=>a.reduce((s,x)=>s+x.valor,0);
@@ -1277,7 +1296,7 @@ function resumo(ym){
   const vari=sum(varAll);
   const variPrev=sum(varAll.filter(i=>i.prev));
   const variReal=vari-variPrev;
-  const entrada=sum(ent);
+  const entrada=ent.reduce((a,e)=>a+valorEntrada(e,ym),0);
   return {it,ent,fixo,parc,vari,variPrev,variReal,entrada,saida:fixo+parc+vari,saldo:entrada-(fixo+parc+vari)};
 }
 function agrupar(it,chave){
@@ -1302,7 +1321,7 @@ const estaVazio=()=>!S.entradas.length&&!S.fixos.length&&!S.parcelas.length&&!S.
    no dia do vencimento. Débito, Pix e dinheiro caem no próprio dia. */
 function fluxoDoMes(ym){
   const ev=[];
-  entradasDoMes(ym).forEach(e=>ev.push({dia:e.dia||5,desc:e.nome,entra:e.valor,
+  entradasDoMes(ym).forEach(e=>ev.push({dia:e.dia||5,desc:e.nome,entra:valorEntrada(e,ym),
     chave:`e:${e.id}:${ym}`, tipo:'entrada'}));
   fixosDoMes(ym).filter(f=>!ehCartao(f.pag))
     .forEach(f=>ev.push({dia:f.dia||10,desc:f.nome,sai:valorFixo(f,ym),chave:`f:${f.id}:${ym}`,fixo:f,
@@ -2472,7 +2491,12 @@ function renderLanc(ym,R){
     +(R.ent.length?R.ent.map(e=>`<tr>
       <td class="desc">${esc(e.nome)} ${e.fixa?'<span class="pill">todo mês</span>':''}</td>
       <td><input class="num inval" style="width:48px;text-align:center" data-edia="${e.id}" value="${e.dia||5}" inputmode="numeric"></td>
-      <td style="text-align:right"><input class="num inval" data-ev="${e.id}" value="${brlc(e.valor)}" style="color:var(--menta)"></td>
+      <td style="text-align:right">
+        <input class="num inval${(e.vpor||{})[ym]!==undefined?' exc':''}" data-ev="${e.id}"
+          value="${brlc(valorEntrada(e,ym))}" style="color:var(--menta)"
+          title="${(e.vpor||{})[ym]!==undefined?`valor só deste mês — o padrão é ${brl(e.valor)}`:''}">
+        ${(e.vpor||{})[ym]!==undefined?`<div class="so-mes">só neste mês · <button class="lnk" data-evreset="${e.id}">voltar a ${brl(e.valor)}</button></div>`:''}
+      </td>
       <td><button class="btn ghost sm" data-delent="${e.id}">×</button></td></tr>`).join('')
      :`<tr><td colspan="4"><div class="empty">Nenhuma entrada neste mês.</div></td></tr>`)
     +`<tr><td><b>Total</b></td><td></td><td class="r pos"><b>${brl(R.entrada)}</b></td><td></td></tr></tbody>`;
@@ -2742,14 +2766,65 @@ document.body.addEventListener('change',e=>{
     toast(`Fatura de ${mesLabel(S.mes)} ajustada.`
       + (ajustadas?` ${ajustadas} ${ajustadas===1?'fatura vizinha cedeu':'faturas vizinhas cederam'} o trecho em comum.`:''));
   }
-  if(d.ev){const en=acha(S.entradas,d.ev),v=parseVal(t.value);
-    if(en&&v){en.valor=v;tocar(en);if(en.fixa)toast('Valor mudou aqui e nos meses seguintes.')}render()}
+  if(d.ev){
+    const en=acha(S.entradas,d.ev), v=parseVal(t.value), ym=S.mes;
+    if(!en||!v){render();return}
+    const atual=valorEntrada(en,ym);
+    if(Math.abs(v-atual)<0.005){render();return}
+    if(!entradaEmOutrosMeses(en,ym)){ en.valor=v; tocar(en); render(); return; }
+    abrirForm(`${en.nome}: ${brl(atual)} → ${brl(v)}`,
+      'Essa entrada se repete todo mês. Onde esse valor novo vale?',
+      [{k:'alcance',lbl:'Aplicar em',tipo:'select',
+        opts:[`Só em ${mesLabel(ym)}`,`De ${mesLabel(ym)} em diante`,'Todos os meses']}],
+      o=>{
+        if(o.alcance.startsWith('Só')){
+          en.vpor=en.vpor||{}; en.vpor[ym]=v;
+        }else if(o.alcance.startsWith('De')){
+          en.valor=v;
+          Object.keys(en.vpor||{}).forEach(m=>{ if(mesDiff(m,ym)>=0) delete en.vpor[m] });
+          en.vpor=en.vpor||{};
+          mesesComDados().filter(m=>mesDiff(m,ym)<0&&mesDiff(m,en.mes)>=0)
+            .forEach(m=>{ if(en.vpor[m]===undefined) en.vpor[m]=atual });
+        }else{
+          en.valor=v; en.vpor={};
+        }
+        tocar(en); dF.close(); render();
+        toast(`${en.nome}: ${brl(v)} ${o.alcance.toLowerCase()}.`);
+      });
+    render(); return;
+  }
+  if(d.evreset){
+    const en=acha(S.entradas,d.evreset);
+    if(en&&en.vpor){ delete en.vpor[S.mes]; tocar(en); render(); toast(`${en.nome} voltou ao valor padrão neste mês.`); }
+    return;
+  }
 });
 document.body.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
   const d=b.dataset;
   if(d.del){S.lancamentos=apagar(S.lancamentos,d.del);render()}
-  if(d.delent){S.entradas=apagar(S.entradas,d.delent);render()}
+  if(d.delent){
+    const en=acha(S.entradas,d.delent), ym=S.mes;
+    if(!en) return;
+    if(!entradaEmOutrosMeses(en,ym)){ S.entradas=apagar(S.entradas,en.id); render(); return; }
+    abrirForm(`Remover ${en.nome}`,
+      'Essa entrada se repete todo mês. De onde você quer tirar?',
+      [{k:'alcance',lbl:'Remover',tipo:'select',
+        opts:[`Só de ${mesLabel(ym)}`,`De ${mesLabel(ym)} em diante`,'De todos os meses']}],
+      o=>{
+        if(o.alcance.startsWith('Só')){
+          en.pulos=en.pulos||{}; en.pulos[ym]=1; tocar(en);
+          toast(`${en.nome} saiu de ${mesLabel(ym)}. Os outros meses continuam.`);
+        }else if(o.alcance.includes('em diante')){
+          if(mesDiff(ym,en.mes)<=0){ S.entradas=apagar(S.entradas,en.id); toast(`${en.nome} removida.`); }
+          else { en.ate=mesShift(ym,-1); tocar(en); toast(`${en.nome} vale até ${mesLabel(en.ate)}.`); }
+        }else{
+          S.entradas=apagar(S.entradas,en.id); toast(`${en.nome} removida de todos os meses.`);
+        }
+        dF.close(); render();
+      });
+    return;
+  }
   if(d.delfix){
     const f=acha(S.fixos,d.delfix), ym=S.mes;
     if(!f) return;
