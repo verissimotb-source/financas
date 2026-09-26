@@ -298,18 +298,20 @@ tr.clicavel:hover td{background:#FFF0F6}
   .tbl.lanc tbody tr>td:nth-child(2){grid-column:2/4;grid-row:2}
   .tbl.lanc tbody tr>td:nth-child(4){grid-column:2/4;grid-row:3}
   .tbl.lanc tbody tr>td:nth-child(5){grid-column:2/4;grid-row:4}
-  .tbl.lanc tbody tr>td:nth-child(8){grid-column:1;grid-row:4;justify-self:start}
+  .tbl.lanc tbody tr>td:nth-child(6){grid-column:2/4;grid-row:5}
+  .tbl.lanc tbody tr>td:nth-child(8){grid-column:1;grid-row:5;justify-self:start}
   .tbl.lanc tbody tr>td[colspan]{grid-column:1/4}
 
   /* fixos: pago | nome | valor / dia+categoria / quem / apagar */
   .tbl.fix tbody tr{grid-template-columns:26px 1fr auto}
   .tbl.fix tbody tr>td:nth-child(1){grid-column:1;grid-row:1}
   .tbl.fix tbody tr>td:nth-child(2){grid-column:2;grid-row:1;font-size:14.5px}
-  .tbl.fix tbody tr>td:nth-child(6){grid-column:3;grid-row:1;text-align:right}
+  .tbl.fix tbody tr>td:nth-child(7){grid-column:3;grid-row:1;text-align:right}
   .tbl.fix tbody tr>td:nth-child(3){grid-column:1/4;grid-row:2;max-width:90px}
   .tbl.fix tbody tr>td:nth-child(4){grid-column:1/4;grid-row:3}
   .tbl.fix tbody tr>td:nth-child(5){grid-column:1/4;grid-row:4}
-  .tbl.fix tbody tr>td:nth-child(7){grid-column:1/4;grid-row:5;justify-self:start}
+  .tbl.fix tbody tr>td:nth-child(6){grid-column:1/4;grid-row:5}
+  .tbl.fix tbody tr>td:nth-child(8){grid-column:1/4;grid-row:6;justify-self:start}
 
   /* parcelas: nome | parcela / dia / categoria / quem / progresso */
   .tbl.parc tbody tr{grid-template-columns:1fr auto}
@@ -321,6 +323,12 @@ tr.clicavel:hover td{background:#FFF0F6}
   .tbl.parc tbody tr>td:nth-child(5){grid-column:1/3;grid-row:5}
   .tbl.parc tbody tr>td:nth-child(6){display:none}
   .tbl.parc tbody tr>td:nth-child(8){grid-column:1/3;grid-row:6;justify-self:start}
+
+  /* linhas da fatura: nome | valor / pago com */
+  .tbl.fatlinhas tbody tr{grid-template-columns:1fr auto}
+  .tbl.fatlinhas tbody tr>td:nth-child(1){grid-column:1;grid-row:1}
+  .tbl.fatlinhas tbody tr>td:nth-child(3){grid-column:2;grid-row:1;text-align:right;white-space:nowrap}
+  .tbl.fatlinhas tbody tr>td:nth-child(2){grid-column:1/3;grid-row:2}
 
   /* entradas: fonte | valor / dia */
   .tbl.ent tbody tr{grid-template-columns:1fr auto}
@@ -516,8 +524,13 @@ tr.quitada td.desc{text-decoration:line-through}
 .num.inval.exc{border-color:var(--orquidea);background:#F9F0FD}
 .so-mes{font-size:10px;color:var(--orquidea);margin-top:4px;text-align:right;line-height:1.35}
 .so-mes .lnk{font-size:10px}
-select.selpag{font-size:11.5px;padding:5px 22px 5px 8px;color:var(--ink2);max-width:118px}
-@media (max-width:760px){ select.selpag{max-width:100%;font-size:12.5px} }
+select.selpag{font-size:11.5px;padding:5px 22px 5px 8px;color:var(--ink2);max-width:130px}
+@media (max-width:880px){
+  .cel-pag{display:block!important}
+  .cel-pag::before{content:"Pago com";display:block;font-size:9.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
+  select.selpag{max-width:100%;width:100%;font-size:13.5px;padding:9px 26px 9px 11px}
+}
 </style>
 
 <div class="wrap">
@@ -1232,9 +1245,12 @@ function mesesComDados(){
   for(let m=ini; mesDiff(fim,m)>=0; m=mesShift(m,1)) out.push(m);
   return out;
 }
-/* o fixo aparece em mais de um mês? se não, editar não precisa perguntar nada */
+/* O fixo vive em outros meses além deste? Um fixo é para frente por
+   natureza: só não tem outros meses se estiver limitado a este. */
 function temOutrosMeses(f,ym){
-  return mesesComDados().some(m=>m!==ym&&fixoVale(f,m));
+  if(mesesComDados().some(m=>m!==ym&&fixoVale(f,m))) return true;   // para trás
+  const depois=mesShift(ym,1);                                      // e para frente
+  return fixoVale(f,depois);
 }
 
 function itensDoMes(ym){
@@ -1891,7 +1907,7 @@ function renderDetalhe(R){
         <td class="desc">${esc(i.desc)}${i.data?` <span class="mini">${dm(i.data)}</span>`:''}${i.parc?` <span class="pill">${i.parc}</span>`:''}</td>
         <td>${selSub(i.sub,campo,i.id,i.cat)}</td>
         <td class="hide-sm"><span class="mini">${esc(i.quem)}</span></td>
-        <td class="hide-sm"><span class="mini">${esc(i.pag)}</span></td>
+        <td class="cel-pag">${selPagItem(i)}</td>
         <td class="r">${brl(i.valor)}</td></tr>`}).join('')}</tbody></table></div>`
       :`<div class="empty">Nada com esses filtros neste mês.</div>`}
   </div>`;
@@ -2279,8 +2295,9 @@ function renderFat(R){
     const compras=S.lancamentos.filter(l=>l.pag===c&&l.data&&mesCaixa(l.data,l.pag)===ym);
     const parc=R.it.filter(i=>i.pag===c&&i.tipo!=='Variável');
     const tC=compras.reduce((s,i)=>s+i.valor,0), tP=parc.reduce((s,i)=>s+i.valor,0), tot=tC+tP;
-    const linhas=[...parc.map(i=>({d:i.desc,c:i.cat,v:i.valor,t:i.parc||'fixo'})),
-                  ...compras.map(l=>({d:l.desc,c:l.cat,v:l.valor,t:dm(l.data)}))].sort((a,b)=>b.v-a.v);
+    const linhas=[...parc.map(i=>({d:i.desc,c:i.cat,v:i.valor,t:i.parc||'fixo',id:i.id,tipo:i.tipo})),
+                  ...compras.map(l=>({d:l.desc,c:l.cat,v:l.valor,t:dm(l.data),id:l.id,tipo:'Variável'}))]
+                  .sort((a,b)=>b.v-a.v);
     return `<div class="card">
       <h3>${esc(c)} <span class="num" style="font-size:17px;font-weight:500">${brl(tot)}</span></h3>
       <div class="ciclo">
@@ -2315,10 +2332,11 @@ function renderFat(R){
       <div class="legenda" style="margin-top:11px">
         <div class="leg"><i style="background:var(--orquidea)"></i><span>Fixos e parcelas</span> <b>${brl(tP)}</b></div>
         <div class="leg"><i style="background:var(--coral)"></i><span>Compras do ciclo</span> <b>${brl(tC)}</b></div></div>
-      ${linhas.length?`<table class="tbl" style="margin-top:12px">${linhas.slice(0,8).map(l=>
-        `<tr><td class="desc">${esc(l.d)} <span class="pill">${l.t}</span></td>
-         <td><span class="mini">${l.c}</span></td><td class="r">${brl(l.v)}</td></tr>`).join('')}</table>
-         ${linhas.length>8?`<div class="mini" style="margin-top:8px">+ ${linhas.length-8} outros</div>`:''}`
+      ${linhas.length?`<table class="tbl mob fatlinhas" style="margin-top:12px"><tbody>${
+        linhas.map(l=>`<tr>
+          <td class="desc">${esc(l.d)} <span class="pill">${l.t}</span></td>
+          <td class="cel-pag">${selPagItem({id:l.id,tipo:l.tipo,pag:c})}</td>
+          <td class="r">${brl(l.v)}</td></tr>`).join('')}</tbody></table>`
         :`<div class="empty">Nada nesta fatura.</div>`}</div>`;
   }).join('');
 
@@ -2326,8 +2344,9 @@ function renderFat(R){
   box.innerHTML+=`<div class="card">
     <h3>Débito, Pix e dinheiro <span class="num" style="font-size:17px;font-weight:500">${brl(outros.reduce((s,i)=>s+i.valor,0))}</span></h3>
     <div class="sub" style="margin-top:-8px;margin-bottom:12px">Sai da conta na hora — não tem fatura.</div>
-    ${outros.length?`<table class="tbl">${outros.sort((a,b)=>b.valor-a.valor).map(i=>
-      `<tr><td class="desc">${esc(i.desc)}</td><td><span class="mini">${i.pag}</span></td><td class="r">${brl(i.valor)}</td></tr>`).join('')}</table>`
+    ${outros.length?`<table class="tbl mob fatlinhas"><tbody>${outros.sort((a,b)=>b.valor-a.valor).map(i=>
+      `<tr><td class="desc">${esc(i.desc)}</td><td class="cel-pag">${selPagItem(i)}</td>
+       <td class="r">${brl(i.valor)}</td></tr>`).join('')}</tbody></table>`
       :`<div class="empty">Nada por aqui.</div>`}</div>`;
 
 }
@@ -2370,7 +2389,7 @@ function renderFix(ym){
       <td><input class="num inval" style="width:48px;text-align:center" data-fdia="${f.id}" value="${f.dia||10}" inputmode="numeric"></td>
       <td>${selCat(f.cat,'fc',f.id)}${selSub(f.sub,'fsb',f.id,f.cat)}</td>
       <td>${selQuem(f.quem,'fq',f.id)}</td>
-      <td class="hide-sm">${selPag(f.pag,'fpag',f.id)}</td>
+      <td class="cel-pag">${selPag(f.pag,'fpag',f.id)}</td>
       <td style="text-align:right">
         <input class="num inval${(f.vpor||{})[ym]!==undefined?' exc':''}" data-fv="${f.id}" value="${brlc(valorFixo(f,ym))}"
           title="${(f.vpor||{})[ym]!==undefined?`valor só deste mês — o padrão é ${brl(f.valor)}`:''}">
@@ -2442,7 +2461,7 @@ function renderLanc(ym,R){
       <td class="desc">${esc(l.desc)}</td>
       <td>${selCat(l.cat,'c',l.id)}${selSub(l.sub,'sb',l.id,l.cat)}</td>
       <td>${selQuem(l.quem,'q',l.id)}</td>
-      <td class="hide-sm">${selPag(l.pag,'lpag',l.id)}</td>
+      <td class="cel-pag">${selPag(l.pag,'lpag',l.id)}</td>
       <td style="text-align:right"><input class="num inval" data-lv="${l.id}" value="${brlc(l.valor)}"></td>
       <td><button class="btn ghost sm" data-del="${l.id}">×</button></td></tr>`).join('')
      :`<tr><td colspan="8"><div class="empty"><b>Mês em branco</b>${futuro(ym)?'Lance aqui o que você já sabe que vai gastar — vai entrar como previsto.':'Lance o primeiro gasto no campo lá em cima.'}</div></td></tr>`)
@@ -2472,13 +2491,44 @@ const selSub=(v,k,id,cat)=>{
 const selQuem=(v,k,id)=>`<select class="selq" data-${k}="${id}">`
   +nomesQuem().map(c=>`<option ${c===v?'selected':''}>${esc(c)}</option>`).join('')+`</select>`;
 /* trocar a forma de pagamento de algo já lançado, sem refazer */
+const opcoesPag=v=>S.pagamentos.map(c=>`<option ${c===v?'selected':''}>${esc(c)}</option>`).join('')
+  +(S.pagamentos.includes(v)?'':`<option selected>${esc(v)}</option>`);
 const selPag=(v,k,id)=>`<select class="selq selpag" data-${k}="${id}" aria-label="Pago com">`
-  +S.pagamentos.map(c=>`<option ${c===v?'selected':''}>${esc(c)}</option>`).join('')
-  +(S.pagamentos.includes(v)?'':`<option selected>${esc(v)}</option>`)+`</select>`;
+  +opcoesPag(v)+`</select>`;
+/* o mesmo menu a partir de um item de qualquer lista (fixo, parcela ou lançamento) */
+const TIPO_LISTA={'Fixo':'f','Parcelado':'p','Variável':'l'};
+const selPagItem=i=>{
+  const t=TIPO_LISTA[i.tipo]||'l';
+  return `<select class="selq selpag" data-anypag="${t}|${i.id}" aria-label="Pago com">`
+    +opcoesPag(i.pag)+`</select>`;
+};
 
 /* ============================================================
    6. INTERAÇÃO
    ============================================================ */
+/* Troca a forma de pagamento e cuida da consequência: um lançamento
+   pode mudar de mês ao virar cartão, e aí levamos você junto. */
+function trocarPag(x, novoPag, ehLanc){
+  const antes=x.pag, nome=x.desc||x.nome;
+  if(antes===novoPag) return;
+  const destino0=ehLanc?mesDoLanc(x):null;
+  x.pag=novoPag; tocar(x);
+  if(ehLanc){
+    const destino=mesDoLanc(x);
+    if(destino!==destino0){
+      if(destino!==S.mes){
+        S.mes=destino;
+        toast(`${nome}: ${antes} → ${novoPag}. Passou para ${mesLabel(destino)} — te levei pra lá.`);
+      }else toast(`${nome}: ${antes} → ${novoPag}. Agora sai em ${mesLabel(destino)}.`);
+      render(); return;
+    }
+  }
+  const virou=ehCartao(novoPag)!==ehCartao(antes);
+  toast(`${nome}: ${antes} → ${novoPag}.`
+    + (virou?(ehCartao(novoPag)?' Agora entra na fatura.':' Agora sai na conta no dia.'):''));
+  render();
+}
+
 let tt;
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2600)}
 
@@ -2555,40 +2605,16 @@ document.getElementById('qAdd').onclick=lancarRapido;
 const acha=(arr,id)=>arr.find(x=>x.id===id);
 document.body.addEventListener('change',e=>{
   const t=e.target,d=t.dataset;
-  /* trocar a forma de pagamento de algo já lançado */
-  if(d.lpag!==undefined){
-    const l=acha(S.lancamentos,d.lpag); if(!l) return;
-    const antes=l.pag, destino0=mesDoLanc(l);
-    l.pag=t.value; tocar(l);
-    const destino=mesDoLanc(l);
-    if(destino!==destino0&&destino!==S.mes){
-      S.mes=destino;
-      toast(`${l.desc}: ${antes} → ${t.value}. Passou para ${mesLabel(destino)} — te levei pra lá.`);
-    }else if(destino!==destino0){
-      toast(`${l.desc}: ${antes} → ${t.value}. Agora sai em ${mesLabel(destino)}.`);
-    }else{
-      toast(`${l.desc}: ${antes} → ${t.value}.`);
-    }
-    render(); return;
+  /* trocar a forma de pagamento — de qualquer tela */
+  if(d.anypag!==undefined){
+    const [tp,id]=d.anypag.split('|');
+    const lista=tp==='f'?S.fixos:tp==='p'?S.parcelas:S.lancamentos;
+    const x=acha(lista,id); if(!x) return;
+    trocarPag(x, t.value, tp==='l'); return;
   }
-  if(d.fpag!==undefined){
-    const f=acha(S.fixos,d.fpag); if(!f) return;
-    const antes=f.pag; f.pag=t.value; tocar(f); render();
-    toast(`${f.nome}: ${antes} → ${t.value}.`
-      + (ehCartao(t.value)!==ehCartao(antes)
-         ? (ehCartao(t.value)?' Agora entra na fatura.':' Agora sai na conta no dia.')
-         : ''));
-    return;
-  }
-  if(d.ppag!==undefined){
-    const pc=acha(S.parcelas,d.ppag); if(!pc) return;
-    const antes=pc.pag; pc.pag=t.value; tocar(pc); render();
-    toast(`${pc.nome}: ${antes} → ${t.value}.`
-      + (ehCartao(t.value)!==ehCartao(antes)
-         ? (ehCartao(t.value)?' Agora entra na fatura.':' Agora sai na conta no dia.')
-         : ''));
-    return;
-  }
+  if(d.lpag!==undefined){ const l=acha(S.lancamentos,d.lpag); if(l) trocarPag(l,t.value,true); return }
+  if(d.fpag!==undefined){ const f=acha(S.fixos,d.fpag);       if(f) trocarPag(f,t.value,false); return }
+  if(d.ppag!==undefined){ const c=acha(S.parcelas,d.ppag);    if(c) trocarPag(c,t.value,false); return }
   if(t.id==='selCiclo'){
     S.cicloRef=(t.value==='cal')?null:t.value; render();
     toast(`Padrão: ${t.value==='cal'?'mês do calendário':'ciclo do '+t.value}.`); return;
@@ -2620,8 +2646,7 @@ document.body.addEventListener('change',e=>{
     if(!f||!v){render();return}
     const atual=valorFixo(f,ym);
     if(Math.abs(v-atual)<0.005){render();return}
-    const soUm=S.fixos.filter(x=>x.id===f.id).length && !temOutrosMeses(f,ym);
-    if(soUm){ f.valor=v; tocar(f); render(); return; }
+    if(!temOutrosMeses(f,ym)){ f.valor=v; tocar(f); render(); return; }
     abrirForm(`${f.nome}: ${brl(atual)} → ${brl(v)}`,
       'Esse fixo se repete todo mês. Onde esse valor novo vale?',
       [{k:'alcance',lbl:'Aplicar em',tipo:'select',
